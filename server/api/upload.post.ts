@@ -13,11 +13,17 @@ export default eventHandler(async (event) => {
     types: ['image/jpeg'],
   }) */
 
+  ensureBlob(photo, {
+    maxSize: '8MB',
+    types: ['image']
+  })
+
   const name = `${new Date('2050-01-01').getTime() - Date.now()}`
 
   // Upload the file to the Cloudflare R2 bucket
   return hubBlob().put(`${name}.jpg`, photo, {
     addRandomSuffix: true,
+    prefix: 'photos/',
     /* customMetadata: {
       userProvider: user.provider,
       userId: user.id,

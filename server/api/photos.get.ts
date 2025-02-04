@@ -1,8 +1,8 @@
 export default eventHandler(async (event) => {
-  // Return 1000 last drawings
-  const { blobs } = await hubBlob().list({
-    limit: 1000
-  })
+  const { cursor } = await getQuery<{ cursor?: string }>(event);
 
-  return blobs
-})
+  return hubBlob().list({
+    limit: 100,
+    cursor,
+  });
+});
