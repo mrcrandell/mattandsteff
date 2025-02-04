@@ -39,7 +39,7 @@ async function submitPhoto() {
   // const file = new File([blob], `drawing.jpg`, { type: 'image/jpeg' })
   // Create the form data
   const form = new FormData()
-  form.append('drawing', fileToUpload.value)
+  form.append('photo', fileToUpload.value)
 
   // Upload the file to the server
   const resp = await $fetch('/api/upload', {

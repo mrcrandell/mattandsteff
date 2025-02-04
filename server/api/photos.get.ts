@@ -1,6 +1,8 @@
 export default eventHandler(async (event) => {
-  // Return 100 last drawings
-  return hubBlob().list({
-    limit: 100
+  // Return 1000 last drawings
+  const { blobs } = await hubBlob().list({
+    limit: 1000
   })
+
+  return blobs
 })
