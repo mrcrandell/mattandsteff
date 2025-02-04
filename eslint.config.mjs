@@ -5,7 +5,7 @@ export default withNuxt(
   // Your custom configs here
   {
     rules: {
-      "semi": ["error", "always"] 
+      'semi': ['error', 'never']
     },
   }
 );
