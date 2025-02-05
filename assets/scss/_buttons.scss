@@ -1,0 +1,72 @@
+// Buttons
+
+.btn {
+  display: inline-flex;
+  gap: rem(4);
+  align-items: center;
+
+  // height: calc((30) / 16 * 1rem);
+  padding: rem(10) rem(28) rem(12);
+  font-family: $font-family-base;
+  font-size: rem(14);
+  font-weight: 600;
+  line-height: normal;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  background-color: transparent;
+  border: 2px solid transparent;
+  border-radius: rem(100);
+  transition: background-color 0.2s;
+
+  &:disabled,
+  &.disabled,
+  fieldset:disabled & {
+    pointer-events: none;
+    opacity: 0.28;
+  }
+
+  span {
+    transition: opacity 0.2s ease-in-out;
+  }
+}
+
+.btn-primary {
+  color: $white;
+  background-color: $dark-green;
+  border-color: $marigold;
+}
+
+.btn-blue {
+  color: $white;
+  background-color: $blue;
+  border-color: $blue;
+}
+
+.btn-outline-primary {
+  color: $black;
+  background-color: $white;
+  border-color: $marigold;
+}
+
+.btn-outline-blue {
+  color: $blue;
+  background-color: transparent;
+  border-color: $blue;
+}
+
+.btn-loading {
+  position: relative;
+
+  .icon-loading {
+    position: absolute;
+    right: 0;
+    left: 0;
+    display: block;
+    width: rem(50);
+    height: auto;
+    margin-right: auto;
+    margin-left: auto;
+  }
+}

@@ -11,4 +11,5 @@ export default createConfigForNuxt({
     rules: {
       semi: ['always'],
     },
+    ignores: ['**/vendor/**'],
   });

@@ -55,7 +55,7 @@ async function submitPhoto() {
 
 <template>
   <div class="page-upload">
-    <h1>Upload</h1>
+    <h1>Share Your Memories</h1>
     <input
       ref="uploadRef"
       class="hide-input"
@@ -77,13 +77,13 @@ async function submitPhoto() {
     >
       <div class="btn-container">
         <button
-          class="btn btn-blue"
+          class="btn btn-primary"
           @click="handleUpload"
         >
           Upload A Photo
         </button>
         <button
-          class="btn btn-blue"
+          class="btn btn-primary"
           @click="handleCapture"
         >
           Take A Photo
@@ -93,7 +93,7 @@ async function submitPhoto() {
     <div v-else>
       <div class="content-padding">
         <header class="title">
-          <h1>How Does It Look?</h1>
+          <h2>How Does It Look?</h2>
         </header>
       </div>
 
@@ -120,25 +120,25 @@ async function submitPhoto() {
         <div class="btn-container btn-container-horizontal">
           <button
             v-if="uploadType === 'upload'"
-            class="btn btn-outline-blue"
+            class="btn btn-outline-primary"
             @click="handleUpload"
           >
             Choose Another
           </button>
           <button
             v-if="uploadType === 'capture'"
-            class="btn btn-outline-blue"
+            class="btn btn-outline-primary"
             @click="handleCapture"
           >
             Retake
           </button>
           <button
-            class="btn btn-blue"
+            class="btn btn-primary"
             :class="{ 'btn-loading': percentageUploaded > 0 }"
             :disabled="percentageUploaded > 0"
             @click="submitPhoto"
           >
-            <span :class="{ 'text-invisible': percentageUploaded > 0 }">Submit {{ percentageUploaded }}</span>
+            <span :class="{ 'text-invisible': percentageUploaded > 0 }">Submit</span>
             <!-- <IconLoadingDots
               v-if="percentageUploaded > 0"
               class="icon-loading"
@@ -149,3 +149,44 @@ async function submitPhoto() {
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+
+.page-upload {
+  h1, h2 {
+    text-align: center;
+  }
+}
+.btn-container {
+  .btn {
+    display: flex;
+    margin-right: auto;
+    margin-bottom: rem(16);
+    margin-left: auto;
+  }
+}
+
+.btn-container-horizontal {
+  display: flex;
+  gap: rem(20);
+  justify-content: center;
+}
+
+.hide-input {
+  display: none;
+}
+
+.photo-preview {
+  margin-bottom: rem(24);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+
+  img {
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+  }
+}
+</style>
