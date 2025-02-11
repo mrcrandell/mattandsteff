@@ -2,34 +2,18 @@ export default eventHandler(async (event) => {
   // Make sure the user is authenticated to upload
   // const { user } = await requireUserSession(event)
 
-  // Read the form data
-  const form = await readFormData(event)
-  const photo = form.get('photo') as File
-
-  // TODO add validation to ensure its an image or video
-  // Ensure the file is a jpeg image and is not larger than 1MB
-  /* ensureBlob(drawing, {
-    maxSize: '1MB',
-    types: ['image/jpeg'],
-  }) */
-
-  ensureBlob(photo, {
-    maxSize: '8MB',
-    types: ['image']
-  })
-
-  const name = `${new Date('2050-01-01').getTime() - Date.now()}`
-
-  // Upload the file to the Cloudflare R2 bucket
-  return hubBlob().put(`${name}.jpg`, photo, {
-    addRandomSuffix: true,
-    prefix: 'photos/',
-    /* customMetadata: {
-      userProvider: user.provider,
-      userId: user.id,
-      userName: user.name,
-      userAvatar: user.avatar,
-      userUrl: user.url,
-    }, */
-  })
+  // TODO add some kind of validation from the frontend
+  return;
+  /* return hubBlob().handleUpload(event, {
+    formKey: 'photos', // read file or files form the `formKey` field of request body (body should be a `FormData` object)
+    multiple: true, // when `true`, the `formKey` field will be an array of `Blob` objects
+    ensure: {
+      maxSize: '8MB',
+      types: ['image']
+    },
+    put: {
+      addRandomSuffix: true,
+      prefix: 'photos/',
+    }
+  }); */
 })

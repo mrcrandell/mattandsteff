@@ -3,9 +3,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxthub/core', "@nuxtjs/google-fonts"],
   googleFonts: {
     families: {
-      'Domine': {
-        wght: '400..700',
-      },
+      'Josefin+Sans': true,
       'Abhaya+Libre': {
         wght: '400;500;600;700;800',
       },

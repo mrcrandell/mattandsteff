@@ -1,0 +1,26 @@
+.img-gallery {
+  /* display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: rem(8);
+
+  @include bp-md-tablet {
+    grid-template-columns: repeat(5, 1fr);
+  } */
+
+  display: flex;
+  gap: rem(8);
+  flex-wrap: wrap;
+  justify-content: center;
+
+  .photo-container {
+    // max-width: ;
+    // Calculate the max-width to be 1/5 of the container width minus the gaps
+    max-width: calc((100% / 3) - (rem(8) * 2 / 3));
+    flex: 1 1 calc((100% / 3) - (rem(8) * 2 / 3));
+    @include bp-md-tablet {
+      max-width: calc((100% / 5) - (rem(8) * 4 / 5));
+      flex: 1 1 calc((100% / 5) - (rem(8) * 4 / 5));
+    }
+  }
+
+}

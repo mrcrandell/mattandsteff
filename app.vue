@@ -9,6 +9,7 @@
 @import "~/assets/scss/root.scss";
 @import "~/assets/scss/reboot.scss";
 @import "~/assets/scss/buttons.scss";
+@import "~/assets/scss/gallery.scss";
 @import "~/assets/scss/global.scss";
 // @use "~/assets/scss/_root.scss";
 

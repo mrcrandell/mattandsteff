@@ -2,11 +2,11 @@
 
 .btn {
   display: inline-flex;
-  gap: rem(4);
+  gap: rem(6);
   align-items: center;
 
   // height: calc((30) / 16 * 1rem);
-  padding: rem(10) rem(28) rem(12);
+  padding: rem(14) rem(28) rem(12);
   font-family: $font-family-base;
   font-size: rem(14);
   font-weight: 600;
@@ -18,7 +18,7 @@
   background-color: transparent;
   border: 2px solid transparent;
   border-radius: rem(100);
-  transition: background-color 0.2s;
+  transition: background-color 0.5s ease-in-out, border-color 0.2s, color 0.2s;
 
   &:disabled,
   &.disabled,
@@ -30,12 +30,23 @@
   span {
     transition: opacity 0.2s ease-in-out;
   }
+
+  .icon {
+    width: 1.25em;
+    display: block;
+    stroke: currentColor;
+    fill: currentColor;
+  }
 }
 
 .btn-primary {
   color: $white;
   background-color: $dark-green;
   border-color: $marigold;
+  &:hover {
+    background-color: $black;
+    border-color: $light-marigold;
+  }
 }
 
 .btn-blue {
@@ -46,8 +57,13 @@
 
 .btn-outline-primary {
   color: $black;
-  background-color: $white;
+  background-color: transparent;
   border-color: $marigold;
+  &:hover {
+    color: $black;
+    background-color: $gray-200;
+    border-color: $light-marigold;
+  }
 }
 
 .btn-outline-blue {
@@ -68,5 +84,19 @@
     height: auto;
     margin-right: auto;
     margin-left: auto;
+  }
+}
+
+.btn-close {
+  display: block;
+  padding: 0;
+  margin-bottom: rem(27);
+  margin-left: auto;
+  background-color: transparent;
+  border: 0;
+
+  svg {
+    width: rem(20);
+    height: rem(20);
   }
 }
