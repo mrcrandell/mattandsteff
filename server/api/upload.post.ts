@@ -3,6 +3,7 @@ export default eventHandler(async (event) => {
   const form = await readFormData(event)
   const token = (form.get('token') || form.get('cf-turnstile-response') || '') as string;
   console.log(token);
+  return;
   /* const turnstileResp = await verifyTurnstileToken(token);
   if (!turnstileResp.success) {
     return {
@@ -12,7 +13,7 @@ export default eventHandler(async (event) => {
       }
     }
   }
-  */
+  
   return hubBlob().handleUpload(event, {
     formKey: 'photos', // read file or files form the `formKey` field of request body (body should be a `FormData` object)
     multiple: true, // when `true`, the `formKey` field will be an array of `Blob` objects
@@ -25,4 +26,5 @@ export default eventHandler(async (event) => {
       prefix: 'photos/',
     }
   });
+  */
 })
