@@ -1,10 +1,10 @@
 export default eventHandler(async (event) => {
   // Get token from event data
   // const form = await readFormData(event)
-  const formDataBody = await readMultipartFormData(event);
   // const token = (form.get('token') || form.get('cf-turnstile-response') || '') as string;
   // const token = form.get('token') as string
-  console.log(formDataBody);
+  const body = await readRawBody(event, "utf-8");
+  console.log(body);
   return;
   /* const turnstileResp = await verifyTurnstileToken(token);
   if (!turnstileResp.success) {
