@@ -1,10 +1,17 @@
 export default eventHandler(async (event) => {
-  // Make sure the user is authenticated to upload
-  // const { user } = await requireUserSession(event)
-
-  // TODO add some kind of validation from the frontend
-  return;
-  /* return hubBlob().handleUpload(event, {
+  // Get token from event data
+  const form = await readFormData(event)
+  const token = (form.get('token') || form.get('cf-turnstile-response') || '') as string;
+  const turnstileResp = await verifyTurnstileToken(token);
+  if (!turnstileResp.success) {
+    return {
+      status: 403,
+      body: {
+        error: 'Invalid token'
+      }
+    }
+  }
+  return hubBlob().handleUpload(event, {
     formKey: 'photos', // read file or files form the `formKey` field of request body (body should be a `FormData` object)
     multiple: true, // when `true`, the `formKey` field will be an array of `Blob` objects
     ensure: {
@@ -15,5 +22,5 @@ export default eventHandler(async (event) => {
       addRandomSuffix: true,
       prefix: 'photos/',
     }
-  }); */
+  });
 })

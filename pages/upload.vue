@@ -7,6 +7,7 @@ const filesToUpload = ref([])
 const isPhotoLoadingToCanvas = ref(false)
 const isLoading = ref(false);
 const isCompleteModalOpen = ref(false);
+const token = ref(null);
 
 function handleUpload() {
   console.log('upload clicked')
@@ -49,6 +50,8 @@ async function submitPhoto() {
     console.log(renamedFile);
     form.append('photos', renamedFile);
   });
+  // Add Captcha token
+  form.append('token', token.value);
   // Upload the file to the server
   const resp = await $fetch('/api/upload', {
     method: 'POST',
@@ -92,6 +95,7 @@ onMounted(() => {
       capture="camera"
       @change="handleFileChange"
     >
+    <NuxtTurnstile v-model="token" />
     <div
       v-if="photos.length === 0"
       class="content-padding"

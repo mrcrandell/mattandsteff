@@ -12,10 +12,14 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@nuxt/scripts": "^0.10.1",
     "@nuxthub/core": "^0.8.15",
     "@nuxtjs/google-fonts": "^3.2.0",
+    "@nuxtjs/turnstile": "^0.9.12",
+    "@unhead/vue": "^1.11.18",
     "nuxt": "^3.15.0",
     "vue": "latest",
+    "vue-recaptcha-v3": "^2.0.1",
     "vue-router": "latest"
   },
   "devDependencies": {
