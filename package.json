@@ -19,7 +19,6 @@
     "@unhead/vue": "^1.11.18",
     "nuxt": "^3.15.0",
     "vue": "latest",
-    "vue-recaptcha-v3": "^2.0.1",
     "vue-router": "latest"
   },
   "devDependencies": {
