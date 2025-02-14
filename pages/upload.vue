@@ -1,6 +1,7 @@
 <script setup>
 const uploadRef = ref(null)
 const captureRef = ref(null)
+const turnstileRef = ref(null);
 const uploadType = ref(null)
 const photos = ref([])
 const filesToUpload = ref([])
@@ -69,6 +70,7 @@ function modalClosed() {
   // Reset stuff
   photos.value = [];
   filesToUpload.value = [];
+  turnstile.value?.reset();
 }
 
 onMounted(() => {
@@ -95,7 +97,7 @@ onMounted(() => {
       capture="camera"
       @change="handleFileChange"
     >
-    <NuxtTurnstile v-model="token" />
+    <NuxtTurnstile ref="turnstileRef" v-model="token" />
     <div
       v-if="photos.length === 0"
       class="content-padding"
