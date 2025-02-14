@@ -11,18 +11,13 @@ async function validateToken(ip: string, token: string, secret: string) {
   });
 
   const outcome = await result.json();
-  console.log(secret);
-  console.log(token);
-  console.log(ip);
-  console.log(outcome);
   return outcome.success;
 }
 
 
 export default eventHandler(async (event) => {
   // Get token from event data
-  const form = await readFormData(event)
-  const file = form.get('file') as File
+  const form = await readFormData(event);
   const token = (form.get('token') || form.get('cf-turnstile-response') || '') as string;
   const secret = process.env.NUXT_TURNSTILE_SECRET_KEY || '';
   // ref="turnstile"
@@ -47,6 +42,11 @@ export default eventHandler(async (event) => {
     }
   } */
 
+  // 
+  // console.log(secret);
+  // console.log(token);
+  // console.log(`IP: ${ip}`);
+
   // Validate Turnstile before Sending Email
   if (! await validateToken(ip, token, secret)) {
       // HTTP_400: Bad Request
@@ -57,17 +57,47 @@ export default eventHandler(async (event) => {
         }
       }
   }
-  
-  return hubBlob().handleUpload(event, {
-    formKey: 'photos', // read file or files form the `formKey` field of request body (body should be a `FormData` object)
-    multiple: true, // when `true`, the `formKey` field will be an array of `Blob` objects
-    ensure: {
+  // Modify event to remove token
+  // Create a new FormData object without the token
+  const newForm = new FormData()
+  for (const [key, value] of form.entries()) {
+    if (key !== 'token' && key !== 'cf-turnstile-response') {
+      newForm.append(key, value)
+    }
+  }
+
+  // console.log(event.node.req.body);
+
+  // Manually handle the upload using the new form data
+  const files = newForm.getAll('photos') as File[]
+  if (!files.length) {
+    throw createError({ statusCode: 400, statusMessage: 'No files uploaded' })
+  }
+
+  const uploadResults = []
+
+  for (const file of files) {
+    // Ensure the file meets the criteria
+    ensureBlob(file, {
       maxSize: '8MB',
       types: ['image']
-    },
-    put: {
-      addRandomSuffix: true,
-      prefix: 'photos/',
+    })
+
+    // Upload the file
+    const result = await hubBlob().put(file.name, file, {
+      addRandomSuffix: false,
+      prefix: 'photos/'
+    })
+
+    // Collect the result
+    uploadResults.push(result)
+  }
+
+  // Return the upload results
+  return {
+    status: 200,
+    body: {
+      uploads: uploadResults
     }
-  });
+  }
 })

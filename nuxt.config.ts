@@ -38,6 +38,11 @@ export default defineNuxtConfig({
       stylistic: true, // <---
     },
   },
+  nitro: {
+    experimental: {
+      openAPI: true
+    }
+  },
   vite: {
     css: {
       preprocessorOptions: {

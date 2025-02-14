@@ -70,7 +70,7 @@ function modalClosed() {
   // Reset stuff
   photos.value = [];
   filesToUpload.value = [];
-  turnstile.value?.reset();
+  turnstileRef.value?.reset();
 }
 
 onMounted(() => {
