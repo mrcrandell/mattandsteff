@@ -1,3 +1,8 @@
+import { prisma } from '~/server/utils/prisma'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+import { v4 as uuid } from 'uuid'
+
 async function validateToken(ip: string, token: string, secret: string) {
   const formData = new FormData();
   formData.append('secret', secret);
@@ -64,22 +69,47 @@ export default eventHandler(async (event) => {
   }
 
   const uploadResults = []
+  const uploadsDir = join(process.cwd(), 'uploads', 'photos')
+  
+  // Ensure uploads directory exists
+  await mkdir(uploadsDir, { recursive: true })
 
   for (const file of files) {
-    // Ensure the file meets the criteria
-    ensureBlob(file, {
-      maxSize: '8MB',
-      types: ['image']
+    // Ensure the file meets the criteria (using basic validation instead of ensureBlob)
+    if (!file.type.startsWith('image/')) {
+      throw createError({ statusCode: 400, statusMessage: 'Only image files are allowed' })
+    }
+    
+    if (file.size > 8 * 1024 * 1024) { // 8MB
+      throw createError({ statusCode: 400, statusMessage: 'File too large. Maximum size is 8MB' })
+    }
+
+    // Generate unique filename
+    const fileExtension = file.name.split('.').pop()
+    const uniqueFilename = `${uuid()}.${fileExtension}`
+    const filePath = join(uploadsDir, uniqueFilename)
+    const relativePath = `photos/${uniqueFilename}`
+
+    // Save file to disk
+    const arrayBuffer = await file.arrayBuffer()
+    await writeFile(filePath, new Uint8Array(arrayBuffer))
+
+    // Save to database
+    const asset = await prisma.asset.create({
+      data: {
+        id: uuid(),
+        path: relativePath,
+        // userId: null, // For now, anonymous uploads
+      }
     })
 
-    // Upload the file
-    const result = await hubBlob().put(file.name, file, {
-      addRandomSuffix: false,
-      prefix: 'photos/'
+    // Collect the result in similar format to hubBlob
+    uploadResults.push({
+      pathname: relativePath,
+      contentType: file.type,
+      size: file.size,
+      uploadedAt: asset.createdAt,
     })
-
-    // Collect the result
-    uploadResults.push(result)
   }
 
   // Return the upload results

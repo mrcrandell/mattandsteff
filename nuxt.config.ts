@@ -1,6 +1,6 @@
 
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxthub/core', "@nuxtjs/google-fonts", '@nuxtjs/turnstile'],
+  modules: ['@nuxt/eslint', "@nuxtjs/google-fonts", '@nuxtjs/turnstile'],
   googleFonts: {
     families: {
       'Josefin+Sans': true,
@@ -22,10 +22,6 @@ export default defineNuxtConfig({
   turnstile: {
     siteKey: '0x4AAAAAAA8dgDkgtYLmL6gf',
     addValidateEndpoint: true,
-  },
-  hub: {
-    blob: true,
-    database: true
   },
   runtimeConfig: {
     turnstile: {

@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  // Relationships
+  posts  Post[]
+  assets Asset[]
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  text      String?
+  userId    String?
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  // Relationships
+  user        User?         @relation(fields: [userId], references: [id])
+  assetsPosts AssetPost[]
+}
+
+model Asset {
+  id        String   @id @default(uuid())
+  path      String?
+  userId    String?
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  // Relationships
+  user        User?         @relation(fields: [userId], references: [id])
+  assetsPosts AssetPost[]
+}
+
+model AssetPost {
+  assetId String
+  postId  String
+
+  // Relationships
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  post  Post  @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([assetId, postId])
+}
