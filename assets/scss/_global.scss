@@ -4,3 +4,18 @@
   @include font-size($lead-font-size);
   font-weight: $lead-font-weight;
 }
+
+.content-padding {
+  padding: rem(16) rem(32);
+  max-width: rem(600);
+  margin-left: auto;
+  margin-right: auto;
+  .form-group {
+    margin-bottom: rem(16);
+  }
+}
+
+// Utilities
+.padding-bottom-0 {
+  padding-bottom: 0;
+}

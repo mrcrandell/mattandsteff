@@ -58,7 +58,7 @@ $green: #117f5a;
 $dark-green: #044044;
 
 // scss-docs-start theme-color-variables
-$primary: $blue;
+$primary: $black;
 $secondary: $gray-600;
 $success: $green;
 $info: $cyan;
@@ -79,6 +79,11 @@ $body-color-dark: $gray-300;
 
 $body-secondary-color: rgba($body-color, .75);
 $body-secondary-bg: $gray-200;
+
+$body-tertiary-color: rgba($body-color, .5);
+$body-tertiary-bg: $gray-100;
+
+$component-active-bg: $primary;
 
 // Paragraphs
 //
@@ -166,6 +171,15 @@ $headings-color: inherit;
 $lead-font-size: $font-size-base * 1.25;
 $lead-font-weight: $font-weight-base;
 
+// Characters which are escaped by the escape-svg function
+$escaped-characters: (
+  ("<", "%3c"),
+  (">", "%3e"),
+  ("#", "%23"),
+  ("(", "%28"),
+  (")", "%29"),
+);
+
 // Options
 $enable-rounded: true;
 $enable-smooth-scroll: true;
@@ -177,8 +191,8 @@ $font-family-serif: 'Abhaya Libre', Iowan Old Style, Apple Garamond, Baskerville
 $font-family-sans-serif: "Josefin Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 $font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 // stylelint-enable value-keyword-case
-$font-family-base: var(--#{$prefix}font-sans-serif);
-$font-family-code: var(--#{$prefix}font-monospace);
+$font-family-base: var(--font-sans-serif);
+$font-family-code: var(--font-monospace);
 
 // Components
 //
@@ -216,7 +230,7 @@ $sub-sup-font-size: .75em;
 $hr-margin-y: $spacer;
 $hr-color: inherit;
 $hr-border-color: null; // Allows for inherited colors
-$hr-border-width: var(--#{$prefix}border-width);
+$hr-border-width: var(--border-width);
 $hr-opacity: .25;
 
 $legend-margin-bottom: .5rem;
@@ -245,7 +259,7 @@ $table-cell-vertical-align: top;
 
 $table-th-font-weight: null;
 
-$table-caption-color: var(--#{$prefix}secondary-color);
+$table-caption-color: var(--secondary-color);
 
 // Code
 
@@ -255,8 +269,60 @@ $code-color: $pink;
 $kbd-padding-y: .1875rem;
 $kbd-padding-x: .375rem;
 $kbd-font-size: $code-font-size;
-$kbd-color: var(--#{$prefix}body-bg);
-$kbd-bg: var(--#{$prefix}body-color);
+$kbd-color: var(--body-bg);
+$kbd-bg: var(--body-color);
 $nested-kbd-font-weight: null; // Deprecated in v5.2.0, removing in v6
 
 $pre-color: null;
+
+// scss-docs-start form-text-variables
+$form-text-margin-top: .25rem;
+$form-text-font-size: $small-font-size;
+// $form-text-font-style: null;
+// $form-text-font-weight: null;
+$form-text-color: var(--secondary-color);
+// scss-docs-end form-text-variables
+
+// scss-docs-start form-label-variables
+$form-label-margin-bottom: .5rem;
+// $form-label-font-size: null;
+// $form-label-font-style: null;
+// $form-label-font-weight: null;
+// $form-label-color: null;
+// scss-docs-end form-label-variables
+
+$input-padding-y: .375rem;
+$input-padding-x: .75rem;
+$input-padding-y-sm: .25rem;
+$input-padding-x-sm: .5rem;
+$input-padding-y-lg: .5rem;
+$input-padding-x-lg: 1rem;
+$input-indicator-padding: $input-padding-x * 3; // Extra padding for background-image
+$input-font-size-sm: $font-size-sm;
+$input-font-size-lg: $font-size-lg;
+$input-border-width: var(--border-width);
+$input-height-border: calc(#{$input-border-width} * 2); // stylelint-disable-line function-disallowed-list
+$input-font-size: $font-size-base;
+$input-font-weight: $font-weight-base;
+$input-line-height: $line-height-base;
+$input-color: var(--body-color);
+$input-bg: var(--body-bg);
+$input-focus-color: var(--body-color);
+$input-focus-bg: var(--body-bg);
+$input-focus-border-color: $dark-green;
+$input-placeholder-color: var(--secondary-color);
+// $input-disabled-color: null;
+$input-disabled-bg: var(--secondary-bg);
+// $input-disabled-border-color: null;
+$input-height: 85px;
+$input-height-sm: add($input-line-height * 1em, add($input-padding-y-sm * 2, $input-height-border, false));
+$input-height-lg: add($input-line-height * 1em, add($input-padding-y-lg * 2, $input-height-border, false));
+$form-feedback-margin-top: .25rem; // 4px
+$form-feedback-font-size: $small-font-size;
+// $form-feedback-font-style: $form-text-font-style;
+$form-feedback-valid-color: $success;
+$form-feedback-invalid-color: $danger;
+$form-select-bg-position: right $input-padding-x center;
+$form-select-bg-size: 16px 12px; // In pixels because image dimensions
+$form-select-indicator-color: $gray-800;
+$form-select-indicator: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='#{$form-select-indicator-color}' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/></svg>");

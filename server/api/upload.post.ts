@@ -31,18 +31,6 @@ export default eventHandler(async (event) => {
   // const token = form.get('token') as string
   // console.log(token);
   // console.log(process.env.NUXT_TURNSTILE_SECRET_KEY);
-  // return;
-  /* const turnstileResp = await verifyTurnstileToken(token);
-  if (!turnstileResp.success) {
-    return {
-      status: 403,
-      body: {
-        error: 'Invalid token'
-      }
-    }
-  } */
-
-  // 
   // console.log(secret);
   // console.log(token);
   // console.log(`IP: ${ip}`);
@@ -57,6 +45,7 @@ export default eventHandler(async (event) => {
         }
       }
   }
+  // If posts exists, set up 
   // Modify event to remove token
   // Create a new FormData object without the token
   const newForm = new FormData()

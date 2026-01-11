@@ -25,6 +25,7 @@ export default defineNuxtConfig({
   },
   hub: {
     blob: true,
+    database: true
   },
   runtimeConfig: {
     turnstile: {

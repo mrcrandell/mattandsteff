@@ -4,50 +4,50 @@
 
   // Note: Use `inspect` for lists so that quoted items keep the quotes.
   // See https://github.com/sass/sass/issues/2383#issuecomment-336349172
-  --#{$prefix}font-sans-serif: #{inspect($font-family-sans-serif)};
-  --#{$prefix}font-monospace: #{inspect($font-family-monospace)};
+  --font-sans-serif: #{inspect($font-family-sans-serif)};
+  --font-monospace: #{inspect($font-family-monospace)};
   // Root and body
   // scss-docs-start root-body-variables
   @if $font-size-root != null {
-    --#{$prefix}root-font-size: #{$font-size-root};
+    --root-font-size: #{$font-size-root};
   }
-  --#{$prefix}body-font-family: #{inspect($font-family-base)};
-  @include rfs($font-size-base, --#{$prefix}body-font-size);
-  --#{$prefix}body-font-weight: #{$font-weight-base};
-  --#{$prefix}body-line-height: #{$line-height-base};
+  --body-font-family: #{inspect($font-family-base)};
+  @include rfs($font-size-base, --body-font-size);
+  --body-font-weight: #{$font-weight-base};
+  --body-line-height: #{$line-height-base};
   @if $body-text-align != null {
-    --#{$prefix}body-text-align: #{$body-text-align};
+    --body-text-align: #{$body-text-align};
   }
 
-  --#{$prefix}body-color: #{$body-color};
-  --#{$prefix}body-color-rgb: #{to-rgb($body-color)};
-  --#{$prefix}body-bg: #{$body-bg};
-  --#{$prefix}body-bg-rgb: #{to-rgb($body-bg)};
+  --body-color: #{$body-color};
+  --body-color-rgb: #{to-rgb($body-color)};
+  --body-bg: #{$body-bg};
+  --body-bg-rgb: #{to-rgb($body-bg)};
 
-  --#{$prefix}secondary-color: #{$body-secondary-color};
-  --#{$prefix}secondary-color-rgb: #{to-rgb($body-secondary-color)};
-  --#{$prefix}secondary-bg: #{$body-secondary-bg};
-  --#{$prefix}secondary-bg-rgb: #{to-rgb($body-secondary-bg)};
+  --secondary-color: #{$body-secondary-color};
+  --secondary-color-rgb: #{to-rgb($body-secondary-color)};
+  --secondary-bg: #{$body-secondary-bg};
+  --secondary-bg-rgb: #{to-rgb($body-secondary-bg)};
 
-  --#{$prefix}heading-color: #{$headings-color};
+  --heading-color: #{$headings-color};
 
-  --#{$prefix}link-color: #{$link-color};
-  --#{$prefix}link-color-rgb: #{to-rgb($link-color)};
-  --#{$prefix}link-decoration: #{$link-decoration};
+  --link-color: #{$link-color};
+  --link-color-rgb: #{to-rgb($link-color)};
+  --link-decoration: #{$link-decoration};
 
-  --#{$prefix}link-hover-color: #{$link-hover-color};
-  --#{$prefix}link-hover-color-rgb: #{to-rgb($link-hover-color)};
+  --link-hover-color: #{$link-hover-color};
+  --link-hover-color-rgb: #{to-rgb($link-hover-color)};
 
   @if $link-hover-decoration != null {
-    --#{$prefix}link-hover-decoration: #{$link-hover-decoration};
+    --link-hover-decoration: #{$link-hover-decoration};
   }
 
-  --#{$prefix}code-color: #{$code-color};
+  --code-color: #{$code-color};
 
   // scss-docs-start root-border-var
-  --#{$prefix}border-width: #{$border-width};
-  --#{$prefix}border-style: #{$border-style};
+  --border-width: #{$border-width};
+  --border-style: #{$border-style};
 
-  --#{$prefix}highlight-color: #{$mark-color-dark};
-  --#{$prefix}highlight-bg: #{$mark-bg-dark};
+  --highlight-color: #{$mark-color-dark};
+  --highlight-bg: #{$mark-bg-dark};
 }

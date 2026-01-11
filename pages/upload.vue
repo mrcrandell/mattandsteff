@@ -2,13 +2,28 @@
 const uploadRef = ref(null)
 const captureRef = ref(null)
 const turnstileRef = ref(null);
-const uploadType = ref(null)
-const photos = ref([])
-const filesToUpload = ref([])
+const uploadType = ref(null);
+const name = ref('');
+const phone = ref('');
+const photos = ref([]);
+const post = ref(null);
+const assetPosts = ref([]);
+const filesToUpload = ref([]);
 const isPhotoLoadingToCanvas = ref(false)
 const isLoading = ref(false);
 const isCompleteModalOpen = ref(false);
 const token = ref(null);
+
+const errorsRaw = ref([]);
+
+const errors = computed(() => {
+  const errors = {};
+  errorsRaw.value.forEach(error => {
+    const [field] = error.path;
+    errors[field] = error.message;
+  });
+  return errors;
+});
 
 function handleUpload() {
   console.log('upload clicked')
@@ -26,12 +41,14 @@ function handleFileChange(event) {
   isPhotoLoadingToCanvas.value = true
   const input = event.target
   if (input.files) {
-    photos.value = [] // Clear previous previews
-    filesToUpload.value = input.files
+    photos.value = []; // Clear previous previews
+    assetPosts.value = []; // Clear previous posts
+    filesToUpload.value = input.files;
     Array.from(input.files).forEach(file => {
       const reader = new FileReader()
       reader.onload = (e) => {
-        photos.value.push(e.target?.result)
+        photos.value.push(e.target?.result);
+        assetPosts.value.push('');
       }
       reader.readAsDataURL(file)
     })
@@ -41,7 +58,7 @@ function handleFileChange(event) {
 async function submitPhoto() {
   isLoading.value = true;
   // Create the form data
-  const form = new FormData()
+  const form = new FormData();
   Array.from(filesToUpload.value).forEach(file => {
     // Rename the file
     const extension = file.name.split('.').pop();
@@ -50,7 +67,14 @@ async function submitPhoto() {
     const renamedFile = new File([file], customName, { type: file.type });
     console.log(renamedFile);
     form.append('photos', renamedFile);
+    // Add the asset post
+    form.append('posts', assetPosts.value[filesToUpload.value.indexOf(file)]);
   });
+  // Add the name and phone number
+  form.append('name', name.value);
+  form.append('phone', phone.value);
+  // Add the post
+  form.append('post', post.value);
   // Add Captcha token
   form.append('token', token.value);
   // Upload the file to the server
@@ -81,6 +105,34 @@ onMounted(() => {
 <template>
   <div class="page-upload">
     <h1>Share Your Memories</h1>
+    <div class="content-padding" :class="{ 'padding-bottom-0': photos.length !== 0 }">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input
+          id="name"
+          type="text"
+          v-model="name"
+          placeholder="Name"
+          class="form-control"
+        >
+        <div v-if="errors.name" class="invalid-feedback">
+          {{ errors.name }}
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input
+          id="phone"
+          type="text"
+          v-model="phone"
+          placeholder="Phone Number"
+          class="form-control"
+        >
+        <div v-if="errors.phone" class="invalid-feedback">
+          {{ errors.phone }}
+        </div>
+      </div>
+    </div>
     <input
       ref="uploadRef"
       class="hide-input"
@@ -128,9 +180,18 @@ onMounted(() => {
           v-for="(photo, index) in photos"
           :key="index"
           :photo="photo"
+          :post="assetPosts[index]"
+          @post-update="assetPosts[index] = $event"
         />
       </div>
       <div class="content-padding">
+        <div class="form-group">
+          <textarea
+            v-model="post"
+            placeholder="leave a comment if you'd like..."
+            class="form-control"
+          ></textarea>
+        </div>
         <div class="btn-container btn-container-horizontal">
           <button
             v-if="uploadType === 'upload'"
@@ -185,12 +246,7 @@ onMounted(() => {
     margin-bottom: rem(32);
   }
 }
-.content-padding {
-  padding: rem(16);
-  max-width: rem(600);
-  margin-left: auto;
-  margin-right: auto;
-}
+
 .btn-container {
   .btn {
     display: flex;

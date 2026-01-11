@@ -1,8 +1,39 @@
 @use "sass:math";
 
+// Characters which are escaped by the escape-svg function
+$escaped-characters: (
+  ("<", "%3c"),
+  (">", "%3e"),
+  ("#", "%23"),
+  ("(", "%28"),
+  (")", "%29"),
+);
+
 // Shade a color: mix a color with black
 @function shade-color($color, $weight) {
   @return mix(black, $color, $weight);
+}
+
+// scss-docs-start color-functions
+// Tint a color: mix a color with white
+@function tint-color($color, $weight) {
+  @return mix(white, $color, $weight);
+}
+
+@function add($value1, $value2, $return-calc: true) {
+  @if $value1 == null {
+    @return $value2;
+  }
+
+  @if $value2 == null {
+    @return $value1;
+  }
+
+  @if type-of($value1) == number and type-of($value2) == number and comparable($value1, $value2) {
+    @return $value1 + $value2;
+  }
+
+  @return if($return-calc == true, calc(#{$value1} + #{$value2}), $value1 + unquote(" + ") + $value2);
 }
 
 // Source: https://css-tricks.com/snippets/sass/px-to-em-functions/

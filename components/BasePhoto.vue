@@ -4,9 +4,17 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  post: {
+    type: String,
+  }
 });
+const emit = defineEmits('post-update');
 const isModalOpen = ref(false);
+const updatedPost = ref(post);
 
+function handleUpdate() {
+  emit('post-update', updatedPost.value);
+}
 </script>
 
 <template>
@@ -17,6 +25,14 @@ const isModalOpen = ref(false);
         <IconClose />
       </button>
       <img :src="photo" alt="Photo" />
+      <div class="form-group">
+        <textarea
+          v-model="updatedPost"
+          placeholder="leave a comment if you'd like..."
+          class="form-control"
+          @change="handleUpdate"
+        ></textarea>
+      </div>
     </BaseModal>
   </div>
 </template>
