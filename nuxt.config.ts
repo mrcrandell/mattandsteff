@@ -1,6 +1,10 @@
-
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', "@nuxtjs/google-fonts", '@nuxtjs/turnstile'],
+  modules: [
+    '@nuxt/eslint',
+    "@nuxtjs/google-fonts",
+    '@nuxtjs/turnstile',
+    'nuxt-auth-utils',
+  ],
   googleFonts: {
     families: {
       'Josefin+Sans': true,
@@ -24,6 +28,13 @@ export default defineNuxtConfig({
     addValidateEndpoint: true,
   },
   runtimeConfig: {
+    passcode: '',
+    session: {
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      }
+    },
     turnstile: {
       // This can be overridden at runtime via the NUXT_TURNSTILE_SECRET_KEY
       // environment variable.
@@ -63,4 +74,3 @@ export default defineNuxtConfig({
     },
   },
 });
-

@@ -16,8 +16,9 @@
 
 body #__nuxt {
   min-height: 100%;
-  > .site-container, > .site-container > .layout-container {
-    min-height: 100vh;
+  > .site-container,
+  > .site-container > .layout-container {
+    min-height: 100dvh;
   }
 }
 </style>
