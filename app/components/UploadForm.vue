@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onUnmounted, computed } from "vue";
 import { v4 as uuidv4 } from "uuid";
+import Compressor from "compressorjs";
 
 interface UploadFile {
   id: string;
@@ -12,9 +13,11 @@ const { user } = useUserSession();
 const files = ref<UploadFile[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
+const isUploading = ref(false);
+const uploadProgress = ref("");
 
-const name = ref((user.value as User)?.name || "");
-const phone = ref((user.value as User)?.phone || "");
+const name = ref((user.value as any)?.name || "");
+const phone = ref((user.value as any)?.phone || "");
 const message = ref("");
 const errorsRaw = ref<any[]>([]);
 
@@ -52,6 +55,24 @@ function removeFile(index: number) {
   }
 }
 
+// Helper function to compress image
+const compressImage = (
+  file: File | Blob,
+  options: Compressor.Options,
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    new Compressor(file, {
+      ...options,
+      success(result) {
+        resolve(result);
+      },
+      error(err) {
+        reject(err);
+      },
+    });
+  });
+};
+
 async function submitForm() {
   errorsRaw.value = [];
 
@@ -70,19 +91,105 @@ async function submitForm() {
     return;
   }
 
-  const body = new FormData();
-  if (name.value) body.append("name", name.value);
-  if (phone.value) body.append("phone", phone.value);
-  if (message.value) body.append("message", message.value);
-
-  files.value.forEach((f) => {
-    body.append("photos", f.file);
-  });
+  isUploading.value = true;
+  uploadProgress.value = "Starting upload...";
 
   try {
-    await $fetch("/api/upload", {
+    // 1. Get Presigned URLs
+    uploadProgress.value = "Preparing upload...";
+    // We assume all files will be converted to JPEG, so we request signed URLs for JPEGs.
+    const presignResponse = await $fetch<any[]>("/api/upload/presign", {
       method: "POST",
-      body,
+      body: {
+        files: files.value.map(() => ({ type: "image/jpeg", size: 0 })),
+      },
+    });
+
+    const uploadedAssets = [];
+    const totalFiles = files.value.length;
+
+    // 2. Process and Upload each file
+    for (let i = 0; i < totalFiles; i++) {
+      const fileItem = files.value[i];
+      const presignData = presignResponse[i];
+
+      uploadProgress.value = `Processing photo ${i + 1} of ${totalFiles}...`;
+
+      let sourceBlob: Blob = fileItem.file;
+
+      // HEIC Conversion
+      if (
+        fileItem.file.type === "image/heic" ||
+        fileItem.file.name.toLowerCase().endsWith(".heic")
+      ) {
+        const heic2any = (await import("heic2any")).default;
+        // heic2any can return Blob or Blob[]
+        const converted = await heic2any({
+          blob: fileItem.file,
+          toType: "image/jpeg",
+        });
+        sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+      }
+
+      // Generate Variants
+      uploadProgress.value = `Compressing photo ${i + 1} of ${totalFiles}...`;
+      const [original, large, thumb] = await Promise.all([
+        // Original: Max 4000x4000, Q90
+        compressImage(sourceBlob, {
+          maxWidth: 4000,
+          maxHeight: 4000,
+          quality: 0.9,
+          mimeType: "image/jpeg",
+        }),
+        // Large: Max 2560x2560, Q85
+        compressImage(sourceBlob, {
+          maxWidth: 2560,
+          maxHeight: 2560,
+          quality: 0.85,
+          mimeType: "image/jpeg",
+        }),
+        // Thumb: Width 400, Q75
+        compressImage(sourceBlob, {
+          maxWidth: 400,
+          quality: 0.75,
+          mimeType: "image/jpeg",
+        }),
+      ]);
+
+      uploadProgress.value = `Uploading photo ${i + 1} of ${totalFiles}...`;
+
+      // Upload to R2
+      await Promise.all([
+        fetch(presignData.urls.original, {
+          method: "PUT",
+          body: original,
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+        fetch(presignData.urls.large, {
+          method: "PUT",
+          body: large,
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+        fetch(presignData.urls.thumb, {
+          method: "PUT",
+          body: thumb,
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+      ]);
+
+      uploadedAssets.push({ id: presignData.id, path: presignData.path });
+    }
+
+    // 3. Finalize
+    uploadProgress.value = "Finalizing...";
+    await $fetch("/api/upload/finalize", {
+      method: "POST",
+      body: {
+        name: name.value,
+        phone: phone.value,
+        message: message.value,
+        assets: uploadedAssets,
+      },
     });
 
     // Clear form on success
@@ -92,7 +199,10 @@ async function submitForm() {
     alert("Upload successful!");
   } catch (err: any) {
     console.error(err);
-    alert(err.data?.message || "Upload failed");
+    alert(err.data?.message || err.message || "Upload failed");
+  } finally {
+    isUploading.value = false;
+    uploadProgress.value = "";
   }
 }
 
@@ -101,6 +211,7 @@ onUnmounted(() => {
 });
 
 function onDrop(event: DragEvent) {
+  if (isUploading.value) return;
   isDragging.value = false;
   if (event.dataTransfer?.files) {
     addFiles(Array.from(event.dataTransfer.files));
@@ -108,6 +219,7 @@ function onDrop(event: DragEvent) {
 }
 
 function triggerFileInput() {
+  if (isUploading.value) return;
   fileInput.value?.click();
 }
 </script>
@@ -115,9 +227,9 @@ function triggerFileInput() {
 <template>
   <div
     class="upload-form"
-    :class="{ 'is-dragging': isDragging }"
-    @dragenter.prevent="isDragging = true"
-    @dragover.prevent="isDragging = true"
+    :class="{ 'is-dragging': isDragging, 'is-uploading': isUploading }"
+    @dragenter.prevent="!isUploading && (isDragging = true)"
+    @dragover.prevent="!isUploading && (isDragging = true)"
     @dragleave.prevent="isDragging = false"
     @drop.prevent="onDrop"
   >
@@ -127,7 +239,9 @@ function triggerFileInput() {
         <span class="upload-icon">📷</span>
       </div>
       <p>Drag & drop photos here or click to select</p>
-      <button class="btn btn-primary">Select Photos</button>
+      <button class="btn btn-primary" :disabled="isUploading">
+        Select Photos
+      </button>
     </div>
 
     <div v-else class="preview-area">
@@ -138,7 +252,11 @@ function triggerFileInput() {
           class="image-preview"
         >
           <img :src="item.preview" :alt="item.file.name" />
-          <button class="remove-btn" @click.stop="removeFile(index)">
+          <button
+            v-if="!isUploading"
+            class="remove-btn"
+            @click.stop="removeFile(index)"
+          >
             <!-- IconClose -->
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -161,7 +279,11 @@ function triggerFileInput() {
         <p>
           {{ files.length }} photo{{ files.length === 1 ? "" : "s" }} selected
         </p>
-        <button class="btn btn-secondary" @click="triggerFileInput">
+        <button
+          class="btn btn-secondary"
+          @click="triggerFileInput"
+          :disabled="isUploading"
+        >
           Add more
         </button>
       </div>
@@ -187,6 +309,7 @@ function triggerFileInput() {
           class="form-control"
           :class="{ 'is-invalid': errors.name }"
           placeholder="Your Name"
+          :disabled="isUploading"
         />
         <div v-if="errors.name" class="invalid-feedback">
           {{ errors.name }}
@@ -202,6 +325,7 @@ function triggerFileInput() {
           class="form-control"
           :class="{ 'is-invalid': errors.phone }"
           placeholder="Your Phone Number"
+          :disabled="isUploading"
         />
         <div v-if="errors.phone" class="invalid-feedback">
           {{ errors.phone }}
@@ -218,20 +342,24 @@ function triggerFileInput() {
           class="form-control"
           placeholder="Add a message (optional)"
           rows="3"
+          :disabled="isUploading"
         ></textarea>
       </div>
 
       <button
         class="btn btn-primary btn-submit"
-        :disabled="files.length === 0"
+        :disabled="files.length === 0 || isUploading"
         @click="submitForm"
       >
-        Upload
-        {{
-          files.length > 0
-            ? `${files.length} Photo${files.length === 1 ? "" : "s"}`
-            : "Photos"
-        }}
+        <span v-if="isUploading">{{ uploadProgress }}</span>
+        <span v-else>
+          Upload
+          {{
+            files.length > 0
+              ? `${files.length} Photo${files.length === 1 ? "" : "s"}`
+              : "Photos"
+          }}
+        </span>
       </button>
     </div>
   </div>
