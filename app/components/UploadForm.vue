@@ -70,8 +70,30 @@ async function submitForm() {
     return;
   }
 
-  // TODO: Handle upload
-  console.log("Submitting:", { files: files.value, ...formData });
+  const body = new FormData();
+  if (name.value) body.append("name", name.value);
+  if (phone.value) body.append("phone", phone.value);
+  if (message.value) body.append("message", message.value);
+
+  files.value.forEach((f) => {
+    body.append("photos", f.file);
+  });
+
+  try {
+    await $fetch("/api/upload", {
+      method: "POST",
+      body,
+    });
+
+    // Clear form on success
+    files.value = [];
+    message.value = "";
+    // name/phone might persist
+    alert("Upload successful!");
+  } catch (err: any) {
+    console.error(err);
+    alert(err.data?.message || "Upload failed");
+  }
 }
 
 onUnmounted(() => {

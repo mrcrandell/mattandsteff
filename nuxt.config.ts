@@ -41,6 +41,13 @@ export default defineNuxtConfig({
       // environment variable.
       secretKey: "",
     },
+    r2: {
+      accountId: "",
+      accessKeyId: "",
+      secretAccessKey: "",
+      bucketName: "",
+      publicUrl: "",
+    },
   },
   eslint: {
     config: {
