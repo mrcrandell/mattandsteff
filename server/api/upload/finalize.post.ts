@@ -64,22 +64,27 @@ export default eventHandler(async (event) => {
     });
 
     // C. Create Assets and Links
-    for (const asset of assets) {
-      await tx.asset.create({
-        data: {
-          id: asset.id,
-          path: asset.path,
-          userId: userId,
-          assetsPosts: {
-            create: {
-              postId: post.id,
+    await Promise.all(
+      assets.map((asset) =>
+        tx.asset.create({
+          data: {
+            id: asset.id,
+            path: asset.path,
+            userId: userId,
+            assetsPosts: {
+              create: {
+                postId: post.id,
+              },
             },
           },
-        },
-      });
-    }
+        })
+      ),
+    );
 
     return { postId: post.id, assets: assets.length };
+  }, {
+    maxWait: 10000, // Wait 10s to get a connection
+    timeout: 20000, // Allow 20s for the transaction to complete
   });
 
   return { success: true, ...result };

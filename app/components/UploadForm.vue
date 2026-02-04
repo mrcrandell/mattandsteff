@@ -2,16 +2,20 @@
 import { ref, onUnmounted, computed } from "vue";
 import { v4 as uuidv4 } from "uuid";
 import Compressor from "compressorjs";
+import BaseThumbnailUpload from "./BaseThumbnailUpload.vue";
+import BtnProgress from "./BtnProgress.vue";
 
 interface UploadFile {
   id: string;
   file: File;
   preview: string;
+  progress: number;
 }
 
 const { user } = useUserSession();
 const files = ref<UploadFile[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
+const emit = defineEmits(["success"]);
 const isDragging = ref(false);
 const isUploading = ref(false);
 const uploadProgress = ref("");
@@ -20,6 +24,7 @@ const name = ref((user.value as any)?.name || "");
 const phone = ref((user.value as any)?.phone || "");
 const message = ref("");
 const errorsRaw = ref<any[]>([]);
+const errorMessage = ref("");
 
 const errors = computed(() => {
   const errors: Record<string, string> = {};
@@ -28,6 +33,12 @@ const errors = computed(() => {
     errors[field] = error.message;
   });
   return errors;
+});
+
+const overallProgress = computed(() => {
+  if (files.value.length === 0) return 0;
+  const total = files.value.reduce((acc, file) => acc + file.progress, 0);
+  return total / files.value.length;
 });
 
 function onFileSelect(event: Event) {
@@ -43,6 +54,7 @@ function addFiles(newFiles: File[]) {
     id: uuidv4(),
     file,
     preview: URL.createObjectURL(file),
+    progress: 0,
   }));
   files.value.push(...newUploadFiles);
 }
@@ -75,6 +87,7 @@ const compressImage = (
 
 async function submitForm() {
   errorsRaw.value = [];
+  errorMessage.value = "";
 
   const formData = {
     name: name.value,
@@ -88,6 +101,7 @@ async function submitForm() {
 
   if (error) {
     errorsRaw.value = error.details;
+    errorMessage.value = "Please check the form for errors.";
     return;
   }
 
@@ -113,6 +127,7 @@ async function submitForm() {
       const fileItem = files.value[i];
       const presignData = presignResponse[i];
 
+      fileItem.progress = 5; // Started
       uploadProgress.value = `Processing photo ${i + 1} of ${totalFiles}...`;
 
       let sourceBlob: Blob = fileItem.file;
@@ -129,6 +144,7 @@ async function submitForm() {
           toType: "image/jpeg",
         });
         sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+        fileItem.progress = 20; // Converted
       }
 
       // Generate Variants
@@ -156,6 +172,7 @@ async function submitForm() {
         }),
       ]);
 
+      fileItem.progress = 60; // Compressed
       uploadProgress.value = `Uploading photo ${i + 1} of ${totalFiles}...`;
 
       // Upload to R2
@@ -177,6 +194,7 @@ async function submitForm() {
         }),
       ]);
 
+      fileItem.progress = 100; // Uploaded
       uploadedAssets.push({ id: presignData.id, path: presignData.path });
     }
 
@@ -192,14 +210,17 @@ async function submitForm() {
       },
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for UX
+
     // Clear form on success
     files.value = [];
     message.value = "";
     // name/phone might persist
-    alert("Upload successful!");
+    emit("success");
   } catch (err: any) {
     console.error(err);
-    alert(err.data?.message || err.message || "Upload failed");
+    errorMessage.value =
+      err.data?.message || err.message || "Upload failed. Please try again.";
   } finally {
     isUploading.value = false;
     uploadProgress.value = "";
@@ -246,34 +267,15 @@ function triggerFileInput() {
 
     <div v-else class="preview-area">
       <div class="image-grid">
-        <div
+        <BaseThumbnailUpload
           v-for="(item, index) in files"
           :key="item.id"
-          class="image-preview"
-        >
-          <img :src="item.preview" :alt="item.file.name" />
-          <button
-            v-if="!isUploading"
-            class="remove-btn"
-            @click.stop="removeFile(index)"
-          >
-            <!-- IconClose -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
+          :preview="item.preview"
+          :alt="item.file.name"
+          :progress="item.progress"
+          :show-remove="!isUploading"
+          @remove="removeFile(index)"
+        />
       </div>
       <div class="actions">
         <p>
@@ -300,6 +302,10 @@ function triggerFileInput() {
     />
 
     <div class="user-details-form">
+      <div v-if="errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
       <div class="form-group">
         <label for="name" class="form-label sr-only">Name</label>
         <input
@@ -346,10 +352,12 @@ function triggerFileInput() {
         ></textarea>
       </div>
 
-      <button
-        class="btn btn-primary btn-submit"
-        :disabled="files.length === 0 || isUploading"
+      <BtnProgress
+        :progress="overallProgress"
+        :loading="isUploading"
+        :disabled="files.length === 0"
         @click="submitForm"
+        class="btn-submit"
       >
         <span v-if="isUploading">{{ uploadProgress }}</span>
         <span v-else>
@@ -360,7 +368,7 @@ function triggerFileInput() {
               : "Photos"
           }}
         </span>
-      </button>
+      </BtnProgress>
     </div>
   </div>
 </template>
@@ -409,47 +417,6 @@ function triggerFileInput() {
   gap: 1rem;
   margin-bottom: 1.5rem;
   width: 100%;
-}
-
-.image-preview {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 4px;
-  overflow: hidden;
-  background-color: $gray-300;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .remove-btn {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: rgba($black, 0.6);
-    color: $white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.2s;
-    padding: 0;
-
-    &:hover {
-      background: rgba($black, 0.8);
-    }
-
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
 }
 
 .actions {

@@ -1,0 +1,26 @@
+@use "sass:color";
+@use "sass:list";
+@use "_variables.scss" as *;
+@use "_functions.scss" as *;
+@use "_mixins.scss" as *;
+
+.alert {
+  position: relative;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  border-radius: rem(4);
+  width: 100%;
+}
+
+.alert-success {
+  color: $success;
+  background-color: tint-color($success, 80%);
+  border-color: tint-color($success, 60%);
+}
+
+.alert-danger {
+  color: $danger;
+  background-color: tint-color($danger, 80%);
+  border-color: tint-color($danger, 60%);
+}

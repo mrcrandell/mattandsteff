@@ -7,6 +7,14 @@ const route = useRoute();
 const router = useRouter();
 const { user, fetch: refreshSession } = useUserSession();
 const isModalOpen = ref(false);
+const showToast = ref(false);
+const toastMessage = ref("");
+
+function handleUploadSuccess() {
+  isModalOpen.value = false;
+  toastMessage.value = "Upload successful!";
+  showToast.value = true;
+}
 
 if (route.query.code) {
   try {
@@ -81,8 +89,13 @@ onUnmounted(() => {
       <template #header>
         <h3>Share a Memory</h3>
       </template>
-      <UploadForm />
+      <UploadForm @success="handleUploadSuccess" />
     </BaseModal>
+    <BaseToast
+      v-if="showToast"
+      :message="toastMessage"
+      @close="showToast = false"
+    />
   </main>
 </template>
 
