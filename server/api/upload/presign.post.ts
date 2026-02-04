@@ -3,6 +3,12 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const config = useRuntimeConfig();
 
+if (!config.r2.accountId || !config.r2.bucketName) {
+  throw new Error(
+    "R2 Configuration missing: check NUXT_R2_ACCOUNT_ID and NUXT_R2_BUCKET_NAME",
+  );
+}
+
 const s3 = new S3Client({
   region: "auto",
   endpoint: `https://${config.r2.accountId}.r2.cloudflarestorage.com`,

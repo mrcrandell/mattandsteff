@@ -28,6 +28,7 @@ export default eventHandler(async (event) => {
             AllowedOrigins: [
               "http://localhost:3000",
               "https://mattandsteff.com",
+              "https://www.mattandsteff.com", // Add www variant
             ], // Add your production domain too
             ExposeHeaders: ["ETag"],
             MaxAgeSeconds: 3600,
