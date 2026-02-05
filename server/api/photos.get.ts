@@ -1,3 +1,5 @@
+import type { Photo } from "~~/shared/types/photo";
+
 export default eventHandler(async (event) => {
   const query = getQuery(event);
   const page = parseInt(query.page as string || "1");
@@ -16,6 +18,26 @@ export default eventHandler(async (event) => {
         not: null,
       },
     },
+    include: {
+      user: {
+        select: {
+          name: true,
+        },
+      },
+      assetsPosts: {
+        include: {
+          post: {
+            include: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   // Get total count for pagination
@@ -29,12 +51,26 @@ export default eventHandler(async (event) => {
 
   // Format response similar to hubBlob().list()
   return {
-    blobs: assets.map((asset) => ({
-      pathname: asset.path,
-      size: 0, // We don't store size in DB yet, could be added
-      uploadedAt: asset.createdAt,
-      contentType: "image/*", // Could be stored in DB if needed
-    })),
+    imgs: assets.map((asset) => {
+      // asset.path is stored as "photos/<uuid>"
+      // transform to usable paths
+      const fileId = asset.path ? asset.path.replace("photos/", "") : asset.id;
+
+      return {
+        id: asset.id,
+        pathname: `${fileId}/original.jpg`,
+        size: 0,
+        uploadedAt: asset.createdAt,
+        contentType: "image/jpeg",
+        urls: {
+          original: `/photos/${fileId}/original.jpg`,
+          large: `/photos/${fileId}/large.jpg`,
+          thumbnail: `/photos/${fileId}/thumb.jpg`,
+        },
+        user: asset.user,
+        post: asset.assetsPosts[0]?.post || null,
+      } as Photo;
+    }),
     hasMore: page * limit < total,
     cursor: page * limit < total ? (page + 1).toString() : null,
   };

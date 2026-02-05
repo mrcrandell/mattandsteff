@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { ref, onUnmounted, computed } from "vue";
 import { v4 as uuidv4 } from "uuid";
 import Compressor from "compressorjs";
-import BaseThumbnailUpload from "./BaseThumbnailUpload.vue";
-import BtnProgress from "./BtnProgress.vue";
 
 interface UploadFile {
   id: string;
@@ -125,6 +122,8 @@ async function submitForm() {
     // 2. Process and Upload each file
     for (let i = 0; i < totalFiles; i++) {
       const fileItem = files.value[i];
+      if (!fileItem) continue;
+
       const presignData = presignResponse[i];
 
       fileItem.progress = 5; // Started
@@ -143,7 +142,10 @@ async function submitForm() {
           blob: fileItem.file,
           toType: "image/jpeg",
         });
-        sourceBlob = Array.isArray(converted) ? converted[0] : converted;
+        const result = Array.isArray(converted) ? converted[0] : converted;
+        if (!result) throw new Error("Failed to convert HEIC image");
+        sourceBlob = result;
+
         fileItem.progress = 20; // Converted
       }
 

@@ -29,6 +29,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     passcode: "",
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL ||
+        "https://www.mattandsteff.com",
+      assetUrl: process.env.NUXT_ASSET_URL || "https://assets.mattandsteff.com",
+    },
     session: {
       password: "",
       cookie: {

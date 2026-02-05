@@ -1,5 +1,5 @@
 <script setup>
-const images = ref([]);
+const imgs = ref([]);
 const hasMore = ref(true);
 const cursor = ref();
 const bottomOfPageRef = ref(null);
@@ -38,7 +38,8 @@ async function getPhotos() {
       cursor: cursor.value,
     },
   });
-  images.value.push(...res.blobs);
+  console.log(toRaw(res));
+  imgs.value.push(...res.imgs);
   hasMore.value = res.hasMore;
   cursor.value = res.cursor;
 }
@@ -46,7 +47,7 @@ async function getPhotos() {
 function handleIntersection(entries) {
   const entry = entries[0];
   if (entry.isIntersecting) {
-    // getPhotos();
+    getPhotos();
   }
 }
 
@@ -72,11 +73,7 @@ onUnmounted(() => {
 <template>
   <main class="main">
     <div class="img-gallery">
-      <BasePhoto
-        v-for="drawing in images"
-        :key="drawing.pathname"
-        :photo="`/photos/${drawing.pathname}`"
-      />
+      <BaseThumbnail v-for="img in imgs" :key="img.id" :img="img" />
       <div ref="bottomOfPageRef" class="bottom-of-page"></div>
     </div>
     {{ user ? "Logged in" : "Not logged in" }}
@@ -100,6 +97,11 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
+.img-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: rem(1);
+}
 .bottom-of-page {
   height: 1px;
   opacity: 0;

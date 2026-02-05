@@ -11,13 +11,14 @@ const props = defineProps({
     type: Number,
     default: 60,
   },
-  strokeWidth: {
-    type: Number,
-    default: 6,
+  isValueShown: {
+    type: Boolean,
+    default: false,
   },
 });
 
-const radius = computed(() => (props.size - props.strokeWidth) / 2);
+const radius = computed(() => props.size / 4);
+const circleStrokeWidth = computed(() => props.size / 2);
 const circumference = computed(() => 2 * Math.PI * radius.value);
 const dashOffset = computed(() => {
   return circumference.value - (props.progress / 100) * circumference.value;
@@ -41,7 +42,7 @@ const isComplete = computed(() => props.progress >= 100);
       <!-- Background Circle -->
       <circle
         class="progress-ring-circle-bg"
-        :stroke-width="strokeWidth"
+        :stroke-width="circleStrokeWidth"
         :r="radius"
         :cx="size / 2"
         :cy="size / 2"
@@ -49,7 +50,7 @@ const isComplete = computed(() => props.progress >= 100);
       <!-- Progress Circle -->
       <circle
         class="progress-ring-circle"
-        :stroke-width="strokeWidth"
+        :stroke-width="circleStrokeWidth"
         :r="radius"
         :cx="size / 2"
         :cy="size / 2"
@@ -74,7 +75,9 @@ const isComplete = computed(() => props.progress >= 100);
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
-      <span v-else class="percentage">{{ Math.round(progress) }}%</span>
+      <span v-else-if="isValueShown" class="percentage"
+        >{{ Math.round(progress) }}%</span
+      >
     </div>
   </div>
 </template>
@@ -85,6 +88,25 @@ const isComplete = computed(() => props.progress >= 100);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
+  &.is-complete {
+    animation: progress-pop 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+}
+
+@keyframes progress-pop {
+  0% {
+    transform: Scale(1);
+  }
+  40% {
+    transform: Scale(0.75);
+  }
+  80% {
+    transform: Scale(1.15);
+  }
+  100% {
+    transform: Scale(1);
+  }
 }
 
 .progress-ring {
@@ -93,13 +115,13 @@ const isComplete = computed(() => props.progress >= 100);
 }
 
 .progress-ring-circle-bg {
-  stroke: $gray-300;
+  // stroke: rgba($gray-900, 0.1);
   fill: transparent;
 }
 
 .progress-ring-circle {
-  stroke: $primary;
-  stroke-linecap: round;
+  stroke: $danger;
+  stroke-linecap: butt; // Pie chart segments usually have butt caps
   fill: transparent;
   transition:
     stroke-dashoffset 0.35s ease,
@@ -111,9 +133,11 @@ const isComplete = computed(() => props.progress >= 100);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: $primary;
-  font-weight: 600;
-  font-size: 0.9em;
+  color: $gray-900;
+  font-weight: 700;
+  font-size: 0.8em;
+  z-index: 10;
+  text-shadow: 0 0 2px $white; // Ensure readability
 }
 
 .checkmark {
@@ -137,14 +161,19 @@ const isComplete = computed(() => props.progress >= 100);
   }
 
   .progress-ring-circle-bg {
-    stroke: transparent; // Hide background or match success
+    stroke: transparent;
+  }
+
+  .content {
+    color: $white;
+    text-shadow: none;
   }
 
   // Optional: Fill the circle when complete
   .progress-ring-circle-bg {
     fill: $success;
     stroke: $success;
-    transition: fill 0.3s ease 0.1s; // Slight delay to fill
+    transition: fill 0.3s ease 0.1s;
   }
 }
 </style>

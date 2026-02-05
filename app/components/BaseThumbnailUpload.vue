@@ -19,7 +19,7 @@ defineEmits<{
     <img :src="preview" :alt="alt" class="thumbnail-image" />
 
     <div v-if="progress > 0" class="progress-container">
-      <CircleProgress :progress="progress" :size="24" :stroke-width="4" />
+      <CircleProgress :progress="progress" :size="24" />
     </div>
 
     <button v-if="showRemove" class="remove-btn" @click.stop="$emit('remove')">
@@ -29,6 +29,7 @@ defineEmits<{
 </template>
 
 <style lang="scss" scoped>
+@use "sass:color";
 .base-thumbnail-upload {
   position: relative;
   aspect-ratio: 1;
@@ -47,7 +48,7 @@ defineEmits<{
     position: absolute;
     top: 4px;
     right: 4px;
-    background: rgba($black, 0.6);
+    background: $danger;
     color: $white;
     border: none;
     border-radius: 50%;
@@ -58,16 +59,20 @@ defineEmits<{
     justify-content: center;
     cursor: pointer;
     transition: background 0.2s;
-    padding: 0;
+    padding: rem(5);
     z-index: 2;
-
+    transition:
+      background-color 0.5s ease-in-out,
+      border-color 0.2s,
+      color 0.2s;
     &:hover {
-      background: rgba($black, 0.8);
+      background: color.adjust($danger, $lightness: -10%);
     }
 
     svg {
-      width: 14px;
-      height: 14px;
+      width: 100%;
+      height: auto;
+      fill: currentColor;
     }
   }
 
@@ -76,12 +81,11 @@ defineEmits<{
     top: 4px;
     right: 4px;
     z-index: 1;
-    background: rgba($white, 0.8);
+    // background: rgba($white, 0.8);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 </style>
