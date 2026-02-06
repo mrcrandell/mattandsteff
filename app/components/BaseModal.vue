@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, useSlots } from 'vue';
+import { ref, watch, useSlots } from "vue";
 
 const slots: any = useSlots();
 
@@ -16,12 +16,16 @@ const prop = defineProps({
     type: Boolean,
     default: false,
   },
+  size: {
+    type: String,
+    default: "md",
+  },
 });
-const emit = defineEmits(['closed']);
+const emit = defineEmits(["closed"]);
 const isShownComplete = ref(false);
 
 function close() {
-  emit('closed');
+  emit("closed");
 }
 function closeFromMask() {
   if (prop.isDisableClosingOnMask) return;
@@ -31,10 +35,10 @@ watch(
   () => prop.isShown,
   () => {
     function disableScroll() {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
     function enableScroll() {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }
     if (prop.isShown) {
       if (!prop.disableScrolling) {
@@ -53,8 +57,14 @@ watch(
 
 <template>
   <Transition name="modal-fade">
-    <div v-if="isShown" class="modal" tabindex="-1" :class="{ show: isShownComplete }" @click.self="closeFromMask">
-      <div class="modal-dialog">
+    <div
+      v-if="isShown"
+      class="modal"
+      tabindex="-1"
+      :class="{ show: isShownComplete }"
+      @click.self="closeFromMask"
+    >
+      <div class="modal-dialog" :class="`modal-${prop.size}`">
         <div class="modal-content">
           <div class="modal-header" v-if="slots.header">
             <slot name="header"></slot>
@@ -85,6 +95,33 @@ watch(
     max-width: 500px;
     margin-right: auto;
     margin-left: auto;
+  }
+
+  &.modal-lg {
+    @include bp-sm-phone-landscape {
+      max-width: 800px;
+    }
+  }
+
+  &.modal-full {
+    margin: 0;
+    max-width: 100%;
+    min-height: 100%;
+
+    @include bp-sm-phone-landscape {
+      max-width: 100%;
+      margin: 0;
+    }
+
+    .modal-content {
+      min-height: 100vh;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .modal-body {
+      padding: 0;
+    }
   }
 }
 

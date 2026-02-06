@@ -1,4 +1,5 @@
 // Vendor
+@use "@/assets/scss/_functions.scss" as *;
 @import "vendor/rfs";
 @import "mixins/border-radius";
 
@@ -12,31 +13,31 @@ $breakpoints: (
 ) !default;
 
 @mixin bp-sm-phone-landscape {
-  @media (min-width: map-get($breakpoints, 'sm')) {
+  @media (min-width: map-get($breakpoints, "sm")) {
     @content;
   }
 }
 
 @mixin bp-md-tablet {
-  @media (min-width: map-get($breakpoints, 'md')) {
+  @media (min-width: map-get($breakpoints, "md")) {
     @content;
   }
 }
 
 @mixin bp-lg-laptop {
-  @media (min-width: map-get($breakpoints, 'lg')) {
+  @media (min-width: map-get($breakpoints, "lg")) {
     @content;
   }
 }
 
 @mixin bp-xl-desktop {
-  @media (min-width: map-get($breakpoints, 'xl')) {
+  @media (min-width: map-get($breakpoints, "xl")) {
     @content;
   }
 }
 
 @mixin bp-xxl-desktop-large {
-  @media (min-width: map-get($breakpoints, 'xxl')) {
+  @media (min-width: map-get($breakpoints, "xxl")) {
     @content;
   }
 }
@@ -50,39 +51,37 @@ $breakpoints: (
 
 // Shadows
 @mixin shadow-0() {
-  -webkit-box-shadow: none;
-  -moz-box-shadow: none;
   box-shadow: none;
 }
 @mixin shadow-1() {
-  -webkit-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
-  -moz-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 rem(1) rem(3) rgba(0, 0, 0, 0.12),
+    0 rem(1) rem(2) rgba(0, 0, 0, 0.24);
 }
 @mixin shadow-2() {
-  -webkit-box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-  -moz-box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  box-shadow:
+    0 rem(3) rem(6) rgba(0, 0, 0, 0.16),
+    0 rem(3) rem(6) rgba(0, 0, 0, 0.23);
 }
 @mixin shadow-3() {
-  -webkit-box-shadow: 0 12px 15px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
-  -moz-box-shadow: 0 12px 15px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
-  box-shadow: 0 12px 15px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+  box-shadow:
+    0 rem(10) rem(20) rgba(0, 0, 0, 0.19),
+    0 rem(6) rem(6) rgba(0, 0, 0, 0.23);
 }
 @mixin shadow-4() {
-  -webkit-box-shadow: 0 16px 28px 0 rgba(0, 0, 0, 0.22), 0 25px 55px 0 rgba(0, 0, 0, 0.21);
-  -moz-box-shadow: 0 16px 28px 0 rgba(0, 0, 0, 0.22), 0 25px 55px 0 rgba(0, 0, 0, 0.21);
-  box-shadow: 0 16px 28px 0 rgba(0, 0, 0, 0.22), 0 25px 55px 0 rgba(0, 0, 0, 0.21);
+  box-shadow:
+    0 rem(14) rem(28) rgba(0, 0, 0, 0.25),
+    0 rem(10) rem(10) rgba(0, 0, 0, 0.22);
 }
 @mixin shadow-5() {
-  -webkit-box-shadow: 0 27px 24px 0 rgba(0, 0, 0, 0.2), 0 40px 77px 0 rgba(0, 0, 0, 0.22);
-  -moz-box-shadow: 0 27px 24px 0 rgba(0, 0, 0, 0.2), 0 40px 77px 0 rgba(0, 0, 0, 0.22);
-  box-shadow: 0 27px 24px 0 rgba(0, 0, 0, 0.2), 0 40px 77px 0 rgba(0, 0, 0, 0.22);
+  box-shadow: 0 rem(30) rem(30) 0 rgba(0, 0, 0, 0.25);
 }
 
 // Mixins
 @mixin hover() {
-  &:hover { @content; }
+  &:hover {
+    @content;
+  }
 }
 
 // Transitions
