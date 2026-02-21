@@ -1,21 +1,26 @@
-import Joi from "joi";
+import { z } from "zod";
 
-export const uploadValidation = Joi.object().keys({
-  message: Joi.string().trim().allow("").optional(),
-  name: Joi.string().trim().when("message", {
-    is: Joi.string().min(1).required(),
-    then: Joi.required().messages({
-      "string.empty": "Please enter your name.",
-      "any.required": "Please enter your name.",
-    }),
-    otherwise: Joi.optional().allow(""),
-  }),
-  phone: Joi.string().trim().when("message", {
-    is: Joi.string().min(1).required(),
-    then: Joi.required().messages({
-      "string.empty": "Please enter your phone number.",
-      "any.required": "Please enter your phone number.",
-    }),
-    otherwise: Joi.optional().allow(""),
-  }),
-});
+export const uploadValidation = z
+  .object({
+    message: z.string().trim().optional().default(""),
+    name: z.string().trim().optional().default(""),
+    phone: z.string().trim().optional().default(""),
+  })
+  .superRefine((data, ctx) => {
+    if (data.message && data.message.length > 0) {
+      if (!data.name || data.name.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter your name.",
+          path: ["name"],
+        });
+      }
+      if (!data.phone || data.phone.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please enter your phone number.",
+          path: ["phone"],
+        });
+      }
+    }
+  });

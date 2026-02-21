@@ -92,12 +92,10 @@ async function submitForm() {
     message: message.value,
   };
 
-  const { error } = uploadValidation.validate(formData, {
-    abortEarly: false,
-  });
+  const result = uploadValidation.safeParse(formData);
 
-  if (error) {
-    errorsRaw.value = error.details;
+  if (!result.success) {
+    errorsRaw.value = result.error.issues;
     errorMessage.value = "Please check the form for errors.";
     return;
   }

@@ -1,21 +1,45 @@
+import { z } from "zod";
+import { uploadValidation } from "../../../shared/utils/validation";
+
 export default eventHandler(async (event) => {
   const session = await requireUserSession(event);
   const sessionPhone = (session.user as any).phone;
 
   const body = await readBody(event);
-  const { name, phone, message, assets } = body as {
-    name: string;
-    phone: string;
-    message: string;
-    assets: { id: string; path: string }[];
-  };
 
-  if (!assets || !Array.isArray(assets) || assets.length === 0) {
-    throw createError({ statusCode: 400, message: "No assets to finalize" });
+  // Validation
+  const validationResult = uploadValidation.safeParse(body);
+  if (!validationResult.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Validation Failed",
+      data: validationResult.error.issues,
+    });
   }
 
+  const { name, phone, message } = validationResult.data;
+
+  // Assets Validation
+  const assetsSchema = z.array(
+    z.object({
+      id: z.string(),
+      path: z.string(),
+    }),
+  ).min(1, "No assets to finalize");
+
+  const assetsResult = assetsSchema.safeParse((body as any).assets);
+  if (!assetsResult.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Invalid assets",
+      data: assetsResult.error.issues,
+    });
+  }
+
+  const assets = assetsResult.data;
+
   // 4. Database Transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const transactionResult = await prisma.$transaction(async (tx) => {
     // A. Resolve User
     let userId: string | null = null;
 
@@ -87,5 +111,5 @@ export default eventHandler(async (event) => {
     timeout: 20000, // Allow 20s for the transaction to complete
   });
 
-  return { success: true, ...result };
+  return { success: true, ...transactionResult };
 });
