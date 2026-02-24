@@ -10,14 +10,14 @@ export const uploadValidation = z
     if (data.message && data.message.length > 0) {
       if (!data.name || data.name.length === 0) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: "Please enter your name.",
           path: ["name"],
         });
       }
       if (!data.phone || data.phone.length === 0) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: "Please enter your phone number.",
           path: ["phone"],
         });
