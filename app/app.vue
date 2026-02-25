@@ -1,8 +1,7 @@
 <template>
-  <div>
-    <AppHeader />
+  <NuxtLayout class="site-container">
     <NuxtPage />
-  </div>
+  </NuxtLayout>
 </template>
 
 <style lang="scss">

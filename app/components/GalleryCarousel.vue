@@ -9,6 +9,7 @@ import "swiper/css/keyboard";
 
 import type { Photo } from "~~/shared/types/photo";
 import IconClose from "./icons/IconClose.vue";
+import { set } from "zod";
 
 const props = defineProps<{
   imgs: Photo[];
@@ -24,6 +25,14 @@ const swiperContainer = ref<HTMLElement | null>(null);
 const swiperInstance = ref<Swiper | null>(null);
 
 const config = useRuntimeConfig();
+const isGalleryHidden = ref(false);
+
+function closeGallery() {
+  isGalleryHidden.value = true;
+  setTimeout(() => {
+    emit("close");
+  }, 300); // Delay to allow any closing animations to complete
+}
 
 onMounted(() => {
   // Swiper initialization
@@ -72,12 +81,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="swiper-container" ref="swiperContainer">
-    <button
-      class="close-btn"
-      @click="$emit('close')"
-      aria-label="Close gallery"
-    >
+  <div
+    class="swiper-container"
+    ref="swiperContainer"
+    :class="{ 'is-hidden': isGalleryHidden }"
+  >
+    <button class="close-btn" @click="closeGallery" aria-label="Close gallery">
       <IconClose />
     </button>
     <div class="swiper-wrapper">
@@ -119,6 +128,11 @@ onUnmounted(() => {
   height: 100vh;
   position: relative;
   background-color: transparent;
+  transition: opacity 0.3s ease;
+  &.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .swiper-wrapper {

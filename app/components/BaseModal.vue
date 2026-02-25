@@ -152,7 +152,6 @@ watch(
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
-
   .modal-dialog,
   .loading-content {
     transform: translate(0, -50px);
