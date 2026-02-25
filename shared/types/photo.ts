@@ -11,17 +11,13 @@ export interface Photo {
     large: string;
     thumbnail: string;
   };
-  user: {
-    name: string;
-  } | null;
+  user: Pick<User, "name"> | null;
   post: {
     id: string;
     text: string | null;
     userId: string | null;
     createdAt: Date | string;
     updatedAt: Date | string;
-    user?: {
-      name: string;
-    } | null;
+    user?: Pick<User, "name"> | null;
   } | null;
 }
