@@ -57,3 +57,19 @@ model AssetPost {
 
   @@id([assetId, postId])
 }
+
+model Admin {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  role          AdminRole @default(ADMIN)
+
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+}
+
+enum AdminRole {
+  ADMIN
+  MODERATOR
+}
