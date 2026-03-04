@@ -1,5 +1,4 @@
 :root {
-
   // Fonts
 
   // Note: Use `inspect` for lists so that quoted items keep the quotes.
@@ -28,6 +27,10 @@
   --secondary-color-rgb: #{to-rgb($body-secondary-color)};
   --secondary-bg: #{$body-secondary-bg};
   --secondary-bg-rgb: #{to-rgb($body-secondary-bg)};
+  --info: #{$info};
+  --info-rgb: #{to-rgb($info)};
+  --danger: #{$danger};
+  --danger-rgb: #{to-rgb($danger)};
 
   --heading-color: #{$headings-color};
 

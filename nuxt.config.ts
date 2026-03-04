@@ -24,6 +24,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      title: "Matt & Steff",
       link: [
         {
           rel: "icon",
@@ -42,6 +43,7 @@ export default defineNuxtConfig({
       ],
       meta: [
         { name: "apple-mobile-web-app-title", content: "Matt & Steff" },
+        { name: "robots", content: "noindex, nofollow" },
       ],
     },
   },

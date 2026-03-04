@@ -90,7 +90,7 @@ onUnmounted(() => {
       />
       <div ref="bottomOfPageRef" class="bottom-of-page"></div>
     </div>
-    {{ user ? "Logged in" : "Not logged in" }}
+    <!-- {{ user ? "Logged in" : "Not logged in" }} -->
     <div v-if="user" class="btn-container">
       <button class="btn btn-primary" @click="isModalOpen = true">
         Share a Memory

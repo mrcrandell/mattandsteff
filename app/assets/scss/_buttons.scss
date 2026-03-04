@@ -1,3 +1,8 @@
+@use "sass:color";
+@use "_variables.scss" as *;
+@use "_functions.scss" as *;
+@use "_mixins.scss" as *;
+
 // Buttons
 
 .btn {
@@ -18,7 +23,10 @@
   background-color: transparent;
   border: 2px solid transparent;
   border-radius: rem(100);
-  transition: background-color 0.5s ease-in-out, border-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.5s ease-in-out,
+    border-color 0.2s,
+    color 0.2s;
 
   &:disabled,
   &.disabled,
@@ -72,6 +80,48 @@
   border-color: $blue;
 }
 
+.btn-info {
+  background-color: var(--info);
+  border-color: var(
+    --btn-info-border-color,
+    color.adjust($info, $lightness: -15%)
+  );
+  color: #fff;
+  &:hover,
+  &:focus {
+    background-color: var(
+      --btn-info-hover-bg,
+      color.adjust($info, $lightness: -15%)
+    );
+    border-color: var(
+      --btn-info-hover-border-color,
+      shade-color(color.adjust($info, $lightness: -15%), 15%)
+    );
+    color: #fff;
+  }
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  border-color: var(
+    --btn-danger-border-color,
+    color.adjust($danger, $lightness: -15%)
+  );
+  color: #fff;
+  &:hover,
+  &:focus {
+    background-color: var(
+      --btn-danger-hover-bg,
+      color.adjust($danger, $lightness: -15%)
+    );
+    border-color: var(
+      --btn-danger-hover-border-color,
+      shade-color(color.adjust($danger, $lightness: -15%), 15%)
+    );
+    color: #fff;
+  }
+}
+
 .btn-loading {
   position: relative;
 
@@ -99,4 +149,13 @@
     width: rem(20);
     height: rem(20);
   }
+}
+
+// Admin buttons
+.btn-admin {
+  padding: rem(8) rem(16);
+  border: none;
+  border-radius: rem(4);
+  cursor: pointer;
+  font-weight: 500;
 }
