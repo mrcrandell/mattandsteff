@@ -12,12 +12,19 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+const isVisible = ref(false);
 let timer: ReturnType<typeof setTimeout> | null = null;
 
+function close() {
+  isVisible.value = false;
+}
+
 onMounted(() => {
+  isVisible.value = true;
+
   if (props.duration !== 0) {
     timer = setTimeout(() => {
-      emit("close");
+      close();
     }, props.duration || 1500);
   }
 });
@@ -28,12 +35,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="base-toast" :class="`toast-${type || 'success'}`">
-    <div class="toast-content">{{ message }}</div>
-    <button class="toast-close" @click="$emit('close')">
-      <IconClose />
-    </button>
-  </div>
+  <Transition name="toast-fade" @after-leave="$emit('close')">
+    <div
+      v-if="isVisible"
+      class="base-toast"
+      :class="`toast-${type || 'success'}`"
+    >
+      <div class="toast-content">{{ message }}</div>
+      <button class="toast-close" @click="close">
+        <IconClose />
+      </button>
+    </div>
+  </Transition>
 </template>
 
 <style lang="scss" scoped>
@@ -102,6 +115,6 @@ onUnmounted(() => {
 .toast-fade-enter-from,
 .toast-fade-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateX(-50px);
 }
 </style>

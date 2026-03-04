@@ -41,6 +41,7 @@ model Asset {
   userId    String?
   createdAt DateTime @default(now()) @db.Timestamptz()
   updatedAt DateTime @updatedAt @db.Timestamptz()
+  isHidden  Boolean  @default(false)
 
   // Relationships
   user        User?         @relation(fields: [userId], references: [id])

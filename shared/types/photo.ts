@@ -3,6 +3,7 @@ import type { User } from "./user";
 export interface Photo {
   id: string;
   pathname: string;
+  isHidden?: boolean;
   size?: number; // Optional as it might be 0
   uploadedAt: Date | string; // Date from prisma might be string on client
   contentType?: string;
