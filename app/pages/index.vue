@@ -11,8 +11,16 @@ const isGalleryOpen = ref(false);
 const activeGalleryIndex = ref(0);
 const showToast = ref(false);
 const toastMessage = ref("");
+const isLoading = ref(true);
 
-function handleUploadSuccess() {
+async function handleUploadSuccess() {
+  isLoading.value = true;
+  // Reset pagination to fetch new photos from the start
+  imgs.value = [];
+  cursor.value = undefined;
+  hasMore.value = true;
+  getPhotos();
+  await new Promise((resolve) => setTimeout(resolve, 500));
   isModalOpen.value = false;
   toastMessage.value = "Upload successful!";
   showToast.value = true;
@@ -50,6 +58,7 @@ async function getPhotos() {
   imgs.value.push(...res.imgs);
   hasMore.value = res.hasMore;
   cursor.value = res.cursor;
+  isLoading.value = false;
 }
 
 function handleIntersection(entries) {
@@ -79,7 +88,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="main">
+  <main class="main" :class="{ 'is-loading': isLoading }">
+    <IconCircleLoading class="icon-loading" v-if="isLoading" />
     <div class="img-gallery">
       <BaseThumbnail
         class="base-thumbnail"
@@ -127,6 +137,15 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
+main.main {
+  flex-grow: 1;
+  &.is-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+}
 .img-gallery {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -160,5 +179,9 @@ onUnmounted(() => {
   :deep(.btn) {
     @include shadow-2();
   }
+}
+.icon-loading {
+  height: rem(100);
+  width: rem(100);
 }
 </style>

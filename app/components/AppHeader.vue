@@ -49,7 +49,7 @@ onUnmounted(() => {
   justify-content: center;
   align-items: center;
   width: 100%;
-  margin-top: rem(5);
+  padding-top: rem(5);
   margin-bottom: rem(5);
   &::after {
     position: absolute;
