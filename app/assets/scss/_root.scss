@@ -27,6 +27,8 @@
   --secondary-color-rgb: #{to-rgb($body-secondary-color)};
   --secondary-bg: #{$body-secondary-bg};
   --secondary-bg-rgb: #{to-rgb($body-secondary-bg)};
+  --blue: #{$blue};
+  --blue-rgb: #{to-rgb($blue)};
   --info: #{$info};
   --info-rgb: #{to-rgb($info)};
   --danger: #{$danger};
@@ -53,4 +55,9 @@
 
   --highlight-color: #{$mark-color-dark};
   --highlight-bg: #{$mark-bg-dark};
+
+  --form-valid-color: #{$form-valid-color};
+  --form-valid-border-color: #{$form-valid-border-color};
+  --form-invalid-color: #{$form-invalid-color};
+  --form-invalid-border-color: #{$form-invalid-border-color};
 }

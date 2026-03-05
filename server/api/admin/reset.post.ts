@@ -3,21 +3,16 @@ import {
   ListObjectsV2Command,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { z } from "zod";
-
-const resetSchema = z.object({
-  password: z.string().min(1, "Password is required"),
-});
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event);
-  if (!session.admin) {
+  if (!session?.admin) {
     throw createError({ statusCode: 403, statusMessage: "Forbidden" });
   }
 
   const { password } = await readValidatedBody(
     event,
-    (body) => resetSchema.parse(body),
+    (body) => resetValidation.parse(body),
   );
 
   // Validate Admin Password

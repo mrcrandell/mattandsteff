@@ -29,3 +29,7 @@ export const loginValidation = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(1, "Please enter your password."),
 });
+
+export const resetValidation = z.object({
+  password: z.string().min(1, "Password is required"),
+});

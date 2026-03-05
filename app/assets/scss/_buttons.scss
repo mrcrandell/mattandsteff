@@ -75,9 +75,21 @@
 }
 
 .btn-outline-blue {
-  color: $blue;
+  color: var(--blue, $blue);
   background-color: transparent;
-  border-color: $blue;
+  border-color: var(--blue, $blue);
+  &:hover,
+  &:focus {
+    background-color: var(
+      --btn-info-hover-bg,
+      color.adjust($blue, $lightness: -15%)
+    );
+    border-color: var(
+      --btn-info-hover-border-color,
+      shade-color(color.adjust($blue, $lightness: -15%), 15%)
+    );
+    color: #fff;
+  }
 }
 
 .btn-info {
@@ -154,7 +166,7 @@
 // Admin buttons
 .btn-admin {
   padding: rem(8) rem(16);
-  border: none;
+  // border: none;
   border-radius: rem(4);
   cursor: pointer;
   font-weight: 500;

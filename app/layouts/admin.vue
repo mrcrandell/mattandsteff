@@ -4,6 +4,16 @@ const showResetModal = ref(false);
 const isResetting = ref(false);
 const resetPassword = ref("");
 const resetError = ref("");
+const errorsRaw = ref<any[]>([]);
+
+const errors = computed(() => {
+  const errors: Record<string, string> = {};
+  errorsRaw.value.forEach((error) => {
+    const [field] = error.path;
+    errors[field] = error.message;
+  });
+  return errors;
+});
 
 async function logout() {
   await clear();
@@ -14,18 +24,24 @@ function handleClose() {
   showResetModal.value = false;
   resetPassword.value = "";
   resetError.value = "";
+  errorsRaw.value = [];
 }
 
 async function handleReset() {
   if (isResetting.value) return;
 
-  if (!resetPassword.value) {
-    resetError.value = "Password is required";
+  errorsRaw.value = [];
+  resetError.value = "";
+
+  const result = resetValidation.safeParse({ password: resetPassword.value });
+
+  if (!result.success) {
+    errorsRaw.value = result.error.issues;
+    resetError.value = "Please check the form for errors.";
     return;
   }
 
   isResetting.value = true;
-  resetError.value = "";
 
   try {
     await $fetch("/api/admin/reset", {
@@ -84,12 +100,13 @@ async function handleReset() {
             v-model="resetPassword"
             type="password"
             class="form-control"
+            :class="{ 'is-invalid': errors.password }"
             placeholder="Enter password"
             @keyup.enter="handleReset"
             :disabled="isResetting"
           />
-          <div v-if="resetError" class="text-danger mt-1 small">
-            {{ resetError }}
+          <div v-if="errors.password" class="invalid-feedback">
+            {{ errors.password }}
           </div>
         </div>
       </div>
@@ -109,6 +126,7 @@ async function handleReset() {
 
 <style scoped lang="scss">
 .admin-layout {
+  --input-border-radius: #{rem(4)};
   display: flex;
   min-height: 100vh;
 }
