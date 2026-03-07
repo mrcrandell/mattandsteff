@@ -24,6 +24,8 @@ export default eventHandler(async (event) => {
     z.object({
       id: z.string(),
       path: z.string(),
+      mediaType: z.enum(["IMAGE", "VIDEO"]).optional(),
+      mimeType: z.string().optional(),
     }),
   ).min(1, "No assets to finalize");
 
@@ -95,6 +97,8 @@ export default eventHandler(async (event) => {
             id: asset.id,
             path: asset.path,
             userId: userId,
+            mediaType: asset.mediaType as any,
+            mimeType: asset.mimeType,
             assetsPosts: {
               create: {
                 postId: post.id,

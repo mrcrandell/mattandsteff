@@ -44,13 +44,55 @@ export default eventHandler(async (event) => {
   const uploads = await Promise.all(
     files.map(async (file) => {
       // Validate file type (basic)
-      if (!file.type.startsWith("image/") && file.type !== "image/heic") {
+      const isVideo = file.type.startsWith("video/");
+
+      if (
+        !file.type.startsWith("image/") && file.type !== "image/heic" &&
+        !isVideo
+      ) {
         // Allow it for now, but client should handle conversion
       }
 
       const assetId = crypto.randomUUID();
       const basePath = `photos/${assetId}`;
       const expires = 600; // 10 minutes
+
+      if (isVideo) {
+        const ext = file.type.includes("quicktime") ? "mov" : "mp4";
+
+        const [videoUrl, thumbUrl] = await Promise.all([
+          getSignedUrl(
+            s3,
+            new PutObjectCommand({
+              Bucket: config.r2.bucketName,
+              Key: `${basePath}/original.${ext}`,
+              ContentType: file.type,
+            }),
+            { expiresIn: expires },
+          ),
+          getSignedUrl(
+            s3,
+            new PutObjectCommand({
+              Bucket: config.r2.bucketName,
+              Key: `${basePath}/thumb.jpg`,
+              ContentType: "image/jpeg",
+            }),
+            { expiresIn: expires },
+          ),
+        ]);
+
+        return {
+          id: assetId,
+          path: basePath,
+          mediaType: "VIDEO",
+          mimeType: file.type,
+          urls: {
+            original: videoUrl,
+            large: thumbUrl,
+            thumb: thumbUrl,
+          },
+        };
+      }
 
       // We expect the client to upload 3 variants per file
       // All variants will be JPEGs if we follow the client-side processing plan
@@ -88,6 +130,8 @@ export default eventHandler(async (event) => {
       return {
         id: assetId,
         path: basePath,
+        mediaType: "IMAGE",
+        mimeType: "image/jpeg",
         urls: {
           original: originalUrl,
           large: largeUrl,

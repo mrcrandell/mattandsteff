@@ -36,16 +36,23 @@ model Post {
 }
 
 model Asset {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   path      String?
   userId    String?
-  createdAt DateTime @default(now()) @db.Timestamptz()
-  updatedAt DateTime @updatedAt @db.Timestamptz()
-  isHidden  Boolean  @default(false)
+  createdAt DateTime  @default(now()) @db.Timestamptz()
+  updatedAt DateTime  @updatedAt @db.Timestamptz()
+  isHidden  Boolean   @default(false)
+  mediaType MediaType @default(IMAGE)
+  mimeType  String?
 
   // Relationships
-  user        User?         @relation(fields: [userId], references: [id])
+  user        User?       @relation(fields: [userId], references: [id])
   assetsPosts AssetPost[]
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
 }
 
 model AssetPost {

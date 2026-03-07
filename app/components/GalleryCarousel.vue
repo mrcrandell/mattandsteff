@@ -92,7 +92,17 @@ onUnmounted(() => {
     <div class="swiper-wrapper">
       <div class="swiper-slide" v-for="img in imgs" :key="img.id">
         <div class="slide-content">
+          <video
+            v-if="img.mediaType === 'VIDEO'"
+            :src="`${config.public.assetUrl}${img.urls.original}`"
+            :poster="`${config.public.assetUrl}${img.urls.large}`"
+            controls
+            playsinline
+            preload="metadata"
+            class="slide-video"
+          ></video>
           <img
+            v-else
             :src="`${config.public.assetUrl}${img.urls.large}`"
             :alt="img.post?.text || 'Gallery image'"
             class="slide-image"
@@ -187,9 +197,10 @@ onUnmounted(() => {
   position: relative;
 }
 
-.slide-image {
+.slide-image,
+.slide-video {
   max-width: 100%;
-  max-height: 100vh;
+  max-height: 90vh; /* Leave space for controls */
   width: auto;
   height: auto;
   object-fit: contain;

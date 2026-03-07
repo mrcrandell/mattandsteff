@@ -7,6 +7,7 @@ defineProps<{
   alt?: string;
   progress: number;
   showRemove?: boolean;
+  isVideo?: boolean;
 }>();
 
 defineEmits<{
@@ -16,6 +17,20 @@ defineEmits<{
 
 <template>
   <div class="base-thumbnail-upload">
+    <div v-if="isVideo" class="video-overlay">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        class="play-icon"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </div>
     <img :src="preview" :alt="alt" class="thumbnail-image" />
 
     <div v-if="progress > 0" class="progress-container">
@@ -42,6 +57,24 @@ defineEmits<{
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  .video-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .play-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
   }
 
   .remove-btn {

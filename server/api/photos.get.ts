@@ -61,15 +61,22 @@ export default eventHandler(async (event) => {
       // transform to usable paths
       const fileId = asset.path ? asset.path.replace("photos/", "") : asset.id;
 
+      let originalUrl = `/photos/${fileId}/original.jpg`;
+      if (asset.mediaType === "VIDEO") {
+        const ext = asset.mimeType?.includes("quicktime") ? "mov" : "mp4";
+        originalUrl = `/photos/${fileId}/original.${ext}`;
+      }
+
       return {
         id: asset.id,
-        pathname: `${fileId}/original.jpg`,
+        pathname: `${fileId}/original.jpg`, // pathname is mostly for key reference
         isHidden: asset.isHidden,
         size: 0,
         uploadedAt: asset.createdAt,
-        contentType: "image/jpeg",
+        contentType: asset.mimeType || "image/jpeg",
+        mediaType: asset.mediaType,
         urls: {
-          original: `/photos/${fileId}/original.jpg`,
+          original: originalUrl,
           large: `/photos/${fileId}/large.jpg`,
           thumbnail: `/photos/${fileId}/thumb.jpg`,
         },
