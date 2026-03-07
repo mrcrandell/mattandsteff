@@ -65,6 +65,7 @@ export default defineNuxtConfig({
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
       },
+      maxAge: 60 * 60 * 24 * 7 * 3, // 3 weeks
     },
     turnstile: {
       // This can be overridden at runtime via the NUXT_TURNSTILE_SECRET_KEY
