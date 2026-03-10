@@ -31,7 +31,10 @@ defineEmits<{
         />
       </svg>
     </div>
-    <img :src="preview" :alt="alt" class="thumbnail-image" />
+    <img v-if="preview" :src="preview" :alt="alt" class="thumbnail-image" />
+    <div v-else class="thumbnail-placeholder">
+      <span class="placeholder-icon">🎬</span>
+    </div>
 
     <div v-if="progress > 0" class="progress-container">
       <CircleProgress :progress="progress" :size="24" />
@@ -46,6 +49,18 @@ defineEmits<{
 <style lang="scss" scoped>
 @use "sass:color";
 .base-thumbnail-upload {
+  /* ... */
+
+  .thumbnail-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #e9ecef;
+    font-size: 2rem;
+  }
+
   position: relative;
   aspect-ratio: 1;
   border-radius: 4px;

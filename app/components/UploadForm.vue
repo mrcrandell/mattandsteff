@@ -8,6 +8,7 @@ interface UploadFile {
   preview: string;
   progress: number;
   mediaType: "IMAGE" | "VIDEO";
+  mimeType: string;
   thumbnail?: Blob;
 }
 
@@ -54,20 +55,34 @@ async function processAndAddFiles(newFiles: File[]) {
   const processedFiles = [];
 
   for (const file of newFiles) {
-    const isVideo = file.type.startsWith("video/");
+    const isVideo =
+      file.type.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(file.name);
     let preview = "";
     let thumbnail: Blob | undefined;
+    let mimeType = file.type;
 
     if (isVideo) {
+      if (!mimeType) {
+        // Fallback mime type if empty - especially common with .mov on some Android/iOS versions
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        mimeType = "video/mp4"; // safer default than quicktime for playback compatibility often
+        if (ext === "mov") mimeType = "video/quicktime";
+        if (ext === "webm") mimeType = "video/webm";
+      }
+
       try {
         thumbnail = await generateVideoThumbnail(file);
-        preview = URL.createObjectURL(thumbnail);
+        if (thumbnail) {
+          preview = URL.createObjectURL(thumbnail);
+        }
       } catch (e) {
-        console.error("Failed to generate thumbnail for video", e);
-        // Fallback? Ideally show an icon
+        console.warn("Thumbnail generation failed or timed out", e);
+        // Fallback: If no thumbnail, we can't show a preview image.
+        // But we should still add the file!
         preview = "";
       }
     } else {
+      if (!mimeType) mimeType = "image/jpeg";
       preview = URL.createObjectURL(file);
     }
 
@@ -77,6 +92,7 @@ async function processAndAddFiles(newFiles: File[]) {
       preview,
       progress: 0,
       mediaType: isVideo ? ("VIDEO" as const) : ("IMAGE" as const),
+      mimeType,
       thumbnail,
     });
   }
@@ -106,30 +122,60 @@ const stream = ref<MediaStream | null>(null);
 const videoPreview = ref<HTMLVideoElement | null>(null);
 let timerInterval: any = null;
 
+function getBestMimeType() {
+  const types = [
+    "video/mp4",
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+  ];
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+  return ""; // Browser default
+}
+
 async function startRecording() {
   errorMessage.value = "";
   try {
     const s = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
     });
+
+    // Verify audio track exists
+    if (s.getAudioTracks().length === 0) {
+      console.warn("No audio track found in stream");
+    }
+
     stream.value = s;
     recordedChunks.value = [];
     recordingTime.value = 30;
     isRecording.value = true;
 
-    // Wait for next tick to ensure video element is mounted (if used in template)
+    // Wait for next tick to ensure video element is mounted
     await nextTick();
     if (videoPreview.value) {
       videoPreview.value.srcObject = s;
       videoPreview.value.muted = true; // Avoid feedback loop
-      videoPreview.value.play();
+      // Ensure we play the video
+      try {
+        await videoPreview.value.play();
+      } catch (e) {
+        console.error("Preview playback failed", e);
+      }
     }
 
-    const mimeType = MediaRecorder.isTypeSupported("video/mp4")
-      ? "video/mp4"
-      : "video/webm";
-    const recorder = new MediaRecorder(s, { mimeType });
+    const mimeType = getBestMimeType();
+    const options = mimeType ? { mimeType } : undefined;
+
+    // Create recorder
+    const recorder = new MediaRecorder(s, options);
     mediaRecorder.value = recorder;
 
     recorder.ondataavailable = (e) => {
@@ -139,22 +185,28 @@ async function startRecording() {
     };
 
     recorder.onstop = async () => {
-      const blob = new Blob(recordedChunks.value, { type: mimeType });
-      const file = new File(
-        [blob],
-        `recorded-message-${Date.now()}.${mimeType === "video/mp4" ? "mp4" : "webm"}`,
-        { type: mimeType },
-      );
+      // If we cancelled, ignore
+      if (!isRecording.value && recordedChunks.value.length === 0) return;
+
+      const type = mimeType || recorder.mimeType || "video/webm";
+      const blob = new Blob(recordedChunks.value, { type });
+      const ext = type.includes("mp4") ? "mp4" : "webm";
+
+      const file = new File([blob], `recorded-message-${Date.now()}.${ext}`, {
+        type,
+      });
 
       // Stop all tracks
       stopStream();
 
       // Add to files
+      // Only add if we are supposed to be saving (stopRecording called)
       await processAndAddFiles([file]);
       isRecording.value = false;
     };
 
-    recorder.start();
+    // Request data every 1 second to ensure we don't lose everything if it crashes
+    recorder.start(1000);
 
     // Timer
     timerInterval = setInterval(() => {
@@ -165,30 +217,31 @@ async function startRecording() {
     }, 1000);
   } catch (err) {
     console.error("Error accessing camera:", err);
-    errorMessage.value = "Could not access camera. Please allow permissions.";
+    errorMessage.value =
+      "Could not access camera/microphone. Please allow permissions.";
     isRecording.value = false;
   }
 }
 
 function stopRecording() {
+  // onstop will handle the file saving
   if (mediaRecorder.value && mediaRecorder.value.state !== "inactive") {
     mediaRecorder.value.stop();
   }
   if (timerInterval) clearInterval(timerInterval);
-  isRecording.value = false; // logic in onstop cleans up
 }
 
 function cancelRecording() {
+  isRecording.value = false;
+  recordedChunks.value = [];
+
   if (mediaRecorder.value && mediaRecorder.value.state !== "inactive") {
-    // Stop but don't save?
-    // Simply stopping triggers onstop which saves.
-    // We should clear the handler or set a flag.
+    // We clear the handler so it doesn't process the file
     mediaRecorder.value.onstop = null;
     mediaRecorder.value.stop();
   }
   stopStream();
   if (timerInterval) clearInterval(timerInterval);
-  isRecording.value = false;
 }
 
 function stopStream() {
@@ -245,10 +298,21 @@ async function submitForm() {
     const presignResponse = await $fetch<any[]>("/api/upload/presign", {
       method: "POST",
       body: {
-        files: files.value.map((f) => ({
-          type: f.mediaType === "VIDEO" ? f.file.type : "image/jpeg",
-          size: f.file.size,
-        })),
+        files: files.value.map((f) => {
+          // For HEIC images, we convert to JPEG before upload, so we must sign for image/jpeg
+          let type = f.mimeType;
+          if (
+            f.mediaType === "IMAGE" &&
+            (type === "image/heic" ||
+              f.file.name.toLowerCase().endsWith(".heic"))
+          ) {
+            type = "image/jpeg";
+          }
+          return {
+            type,
+            size: f.file.size,
+          };
+        }),
       },
     });
 
@@ -274,10 +338,17 @@ async function submitForm() {
         // Upload Video
         fileItem.progress = 20;
 
+        // Use slice to ensure the Blob has the correct MIME type matching our signature
+        const videoBlob = fileItem.file.slice(
+          0,
+          fileItem.file.size,
+          fileItem.mimeType,
+        );
+
         await fetch(presignData.urls.original, {
           method: "PUT",
-          body: fileItem.file,
-          headers: { "Content-Type": fileItem.file.type },
+          body: videoBlob,
+          headers: { "Content-Type": fileItem.mimeType },
         });
 
         fileItem.progress = 60;
@@ -304,7 +375,7 @@ async function submitForm() {
           id: presignData.id,
           path: presignData.path,
           mediaType: "VIDEO",
-          mimeType: fileItem.file.type,
+          mimeType: fileItem.mimeType,
         });
         continue;
       }

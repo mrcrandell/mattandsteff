@@ -135,7 +135,7 @@ watch(
   outline: 0;
 
   display: flex;
-  align-items: center;
+  // align-items: center;
 }
 
 .modal-content {
