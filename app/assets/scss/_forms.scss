@@ -1,6 +1,7 @@
 // Forms
 .form-label {
   margin-bottom: $form-label-margin-bottom;
+  line-height: normal;
   // @include font-size($form-label-font-size);
   // font-style: $form-label-font-style;
   // font-weight: $form-label-font-weight;

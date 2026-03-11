@@ -106,9 +106,15 @@ onUnmounted(() => {
         Share a Memory
       </button>
     </div>
-    <BaseModal :isShown="isModalOpen" @closed="isModalOpen = false">
+    <BaseModal
+      class="modal-upload"
+      :isShown="isModalOpen"
+      @closed="isModalOpen = false"
+    >
       <template #header>
-        <h3>Share a Memory</h3>
+        <button class="btn btn-close" @click="isModalOpen = false">
+          <IconClose />
+        </button>
       </template>
       <UploadForm @success="handleUploadSuccess" />
     </BaseModal>
@@ -178,6 +184,36 @@ main.main {
   width: 100%;
   :deep(.btn) {
     @include shadow-2();
+  }
+}
+.modal-upload {
+  .btn-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: white;
+    padding: 0.75rem;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    :deep(svg) {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
   }
 }
 .icon-loading {

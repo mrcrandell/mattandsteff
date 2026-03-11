@@ -86,10 +86,10 @@ watch(
   position: relative;
   z-index: 1055;
   width: auto;
-  margin: 8px;
+  margin: rem(16);
   pointer-events: none;
   transition: transform 0.3s ease-out;
-  width: 100%;
+  // width: 100%;
 
   @include bp-sm-phone-landscape {
     max-width: 500px;
@@ -133,15 +133,16 @@ watch(
   background-color: rgba($color: #000, $alpha: 50%);
   backdrop-filter: blur(4px);
   outline: 0;
-
-  display: flex;
-  align-items: center;
+  // display: flex;
+  // align-items: center;
 }
 
 .modal-content {
   pointer-events: auto;
-  background-color: $gray-900;
-  color: $white;
+  border-radius: rem(20);
+  background-color: $white;
+  // background-color: $gray-900;
+  // color: $white;
 }
 
 .modal-fade-enter-active,
@@ -159,6 +160,6 @@ watch(
 }
 
 .modal-body {
-  padding: rem(30);
+  padding: rem(16);
 }
 </style>
