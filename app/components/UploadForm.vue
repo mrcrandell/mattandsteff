@@ -745,9 +745,9 @@ function triggerFileInput() {
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  // display: flex;
+  // flex-direction: column;
+  // gap: 0.25rem;
 }
 
 .btn-submit {
