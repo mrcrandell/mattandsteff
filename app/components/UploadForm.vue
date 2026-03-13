@@ -115,6 +115,7 @@ function removeFile(index: number) {
 
 // Recording Logic
 const isRecording = ref(false);
+const isRecordingLoading = ref(false);
 const recordingTime = ref(30);
 const mediaRecorder = ref<MediaRecorder | null>(null);
 const recordedChunks = ref<Blob[]>([]);
@@ -139,14 +140,37 @@ function getBestMimeType() {
 
 async function startRecording() {
   errorMessage.value = "";
+  isRecordingLoading.value = true;
   try {
-    const s = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-      },
-    });
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error(
+        "Camera API unavailable. Context must be secure (HTTPS/localhost).",
+      );
+    }
+
+    let s: MediaStream;
+    try {
+      s = await navigator.mediaDevices.getUserMedia({
+        // facingMode: "user" prefers front camera on mobile
+        video: {
+          facingMode: { ideal: "user" },
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+    } catch (constraintErr) {
+      console.warn(
+        "Failed with clear preferences, trying fallbacks",
+        constraintErr,
+      );
+      // Fallback to minimal constraints
+      s = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+    }
 
     // Verify audio track exists
     if (s.getAudioTracks().length === 0) {
@@ -157,6 +181,7 @@ async function startRecording() {
     recordedChunks.value = [];
     recordingTime.value = 30;
     isRecording.value = true;
+    isRecordingLoading.value = false;
 
     // Wait for next tick to ensure video element is mounted
     await nextTick();
@@ -215,11 +240,13 @@ async function startRecording() {
         stopRecording();
       }
     }, 1000);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error accessing camera:", err);
     errorMessage.value =
-      "Could not access camera/microphone. Please allow permissions.";
+      err.message ||
+      "Could not access camera/microphone. Please allow permissions/HTTPS.";
     isRecording.value = false;
+    isRecordingLoading.value = false;
   }
 }
 
@@ -233,6 +260,7 @@ function stopRecording() {
 
 function cancelRecording() {
   isRecording.value = false;
+  isRecordingLoading.value = false;
   recordedChunks.value = [];
 
   if (mediaRecorder.value && mediaRecorder.value.state !== "inactive") {
@@ -516,35 +544,8 @@ function triggerFileInput() {
     @dragleave.prevent="isDragging = false"
     @drop.prevent="onDrop"
   >
-    <!-- Recording UI -->
-    <div v-if="isRecording" class="recording-overlay">
-      <div class="video-container">
-        <video
-          ref="videoPreview"
-          autoplay
-          playsinline
-          muted
-          class="recording-preview"
-        ></video>
-        <div class="recording-timer">{{ recordingTime }}s</div>
-      </div>
-      <div class="recording-controls">
-        <button class="btn btn-danger" @click="stopRecording">
-          Stop & Use
-        </button>
-        <button class="btn btn-secondary" @click="cancelRecording">
-          Cancel
-        </button>
-      </div>
-      <p class="recording-tip">Recording limited to 30 seconds</p>
-    </div>
-
     <!-- Drop Area -->
-    <div
-      v-else-if="files.length === 0"
-      class="drop-area"
-      @click="triggerFileInput"
-    >
+    <div v-if="files.length === 0" class="drop-area" @click="triggerFileInput">
       <div class="icon-container">
         <!-- You can replace this with an actual icon later -->
         <span class="upload-icon">📷</span>
@@ -555,11 +556,16 @@ function triggerFileInput() {
           Select Files
         </button>
         <button
-          class="btn btn-secondary"
-          :disabled="isUploading"
+          class="btn btn-outline-primary"
+          :class="{ 'btn-loading': isRecordingLoading }"
+          :disabled="isUploading || isRecordingLoading"
           @click.stop="startRecording"
         >
           Record Video
+          <IconCircleLoading
+            v-if="isRecordingLoading"
+            class="icon-loading-inline"
+          />
         </button>
       </div>
     </div>
@@ -583,18 +589,24 @@ function triggerFileInput() {
         </p>
         <div class="button-group">
           <button
-            class="btn btn-secondary"
+            class="btn btn-outline-primary"
             @click="triggerFileInput"
             :disabled="isUploading"
           >
             Add more
           </button>
           <button
-            class="btn btn-secondary"
+            class="btn btn-outline-primary"
             @click="startRecording"
-            :disabled="isUploading"
+            :class="{ 'btn-loading': isRecordingLoading }"
+            :disabled="isUploading || isRecordingLoading"
           >
             Record
+
+            <IconCircleLoading
+              v-if="isRecordingLoading"
+              class="icon-loading-inline"
+            />
           </button>
         </div>
       </div>
@@ -610,7 +622,7 @@ function triggerFileInput() {
       @click.stop
     />
 
-    <div class="user-details-form" v-if="!isRecording">
+    <div class="user-details-form">
       <div v-if="errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
@@ -679,15 +691,40 @@ function triggerFileInput() {
         </span>
       </BtnProgress>
     </div>
+
+    <!-- Recording Modal -->
+    <BaseModal :isShown="isRecording" @closed="cancelRecording" size="md">
+      <div class="recording-overlay">
+        <div class="video-container">
+          <video
+            ref="videoPreview"
+            autoplay
+            playsinline
+            muted
+            class="recording-preview"
+          ></video>
+          <div class="recording-timer">{{ recordingTime }}s</div>
+        </div>
+        <div class="recording-controls">
+          <button class="btn btn-danger" @click="stopRecording">
+            Stop & Use
+          </button>
+          <button class="btn btn-outline-primary" @click="cancelRecording">
+            Cancel
+          </button>
+        </div>
+        <p class="recording-tip">Recording limited to 30 seconds</p>
+      </div>
+    </BaseModal>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .upload-form {
   border: 2px dashed $gray-400;
-  padding: 2rem;
+  padding: rem(25);
   text-align: center;
-  border-radius: 8px;
+  border-radius: rem(8);
   background-color: $gray-100;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -701,7 +738,7 @@ function triggerFileInput() {
   &.is-dragging {
     border-color: $gray-800;
     background-color: $gray-300;
-    transform: #{"scale" }(1.02);
+    transform: scaleX(1.02) scaleY(1.02);
   }
 }
 
