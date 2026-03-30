@@ -16,6 +16,7 @@ import "swiper/css/keyboard";
 
 import type { Photo } from "~~/shared/types/photo";
 import IconClose from "./icons/IconClose.vue";
+import IconCircleLoading from "./icons/IconCircleLoading.vue";
 
 const props = defineProps<{
   imgs: Photo[];
@@ -68,6 +69,19 @@ function isVideoPreviewReady(index: number) {
   return Boolean(videoPreviewReady.value[index]);
 }
 
+function handleVideoCanPlayThrough(index: number) {
+  if (isVideoPreviewReady(index)) {
+    return;
+  }
+
+  // Ensure one paint occurs with opacity 0 before revealing so CSS transition runs.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setVideoPreviewReady(index, true);
+    });
+  });
+}
+
 function setImageLoaded(index: number, isLoaded: boolean) {
   imageLoaded.value[index] = isLoaded;
 }
@@ -100,20 +114,11 @@ function cueVideoPreview(index: number) {
   const setPreviewFrame = () => {
     video.pause();
 
-    if (video.currentTime > 0) {
-      setVideoPreviewReady(index, true);
-      return;
-    }
+    if (video.currentTime > 0) return;
 
     const previewTime = Number.isFinite(video.duration)
       ? Math.min(0.1, video.duration || 0.1)
       : 0.1;
-
-    const handleSeeked = () => {
-      setVideoPreviewReady(index, true);
-    };
-
-    video.addEventListener("seeked", handleSeeked, { once: true });
     video.currentTime = previewTime;
   };
 
@@ -241,25 +246,37 @@ onUnmounted(() => {
             :preload="activeIndex === index ? 'auto' : 'metadata'"
             class="slide-video"
             :class="{ 'is-visible': isVideoPreviewReady(index) }"
+            @canplaythrough="handleVideoCanPlayThrough(index)"
           ></video>
           <Transition name="fade-media" appear>
             <img
               v-if="img.mediaType === 'VIDEO'"
-              v-show="!isVideoPreviewReady(index) && isVideoThumbLoaded(index)"
+              v-show="!isVideoPreviewReady(index)"
               :src="`${config.public.assetUrl}${img.urls.thumbnail}`"
               :alt="img.post?.text || 'Video thumbnail'"
               class="slide-image video-placeholder"
+              :class="{ 'is-visible': isVideoThumbLoaded(index) }"
               loading="lazy"
               @load="setVideoThumbLoaded(index, true)"
             />
           </Transition>
           <Transition name="fade-media" appear>
+            <div
+              v-if="img.mediaType === 'VIDEO'"
+              v-show="!isVideoPreviewReady(index)"
+              class="video-loading-overlay"
+              aria-hidden="true"
+            >
+              <IconCircleLoading class="icon-loading" />
+            </div>
+          </Transition>
+          <Transition name="fade-media" appear>
             <img
               v-if="img.mediaType !== 'VIDEO'"
-              v-show="isImageLoaded(index)"
               :src="`${config.public.assetUrl}${img.urls.large}`"
               :alt="img.post?.text || 'Gallery image'"
               class="slide-image"
+              :class="{ 'is-visible': isImageLoaded(index) }"
               loading="lazy"
               @load="setImageLoaded(index, true)"
             />
@@ -363,6 +380,15 @@ onUnmounted(() => {
   display: block;
 }
 
+.slide-image {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.slide-image.is-visible {
+  opacity: 1;
+}
+
 .slide-video {
   opacity: 0;
   transition: opacity 0.35s ease;
@@ -376,6 +402,21 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   margin: auto;
+  filter: blur(rem(2));
+}
+
+.video-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.icon-loading {
+  width: 5rem;
+  height: 5rem;
 }
 
 .fade-media-enter-active,
