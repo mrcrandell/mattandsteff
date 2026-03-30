@@ -62,14 +62,19 @@ export default eventHandler(async (event) => {
       const fileId = asset.path ? asset.path.replace("photos/", "") : asset.id;
 
       let originalUrl = `/photos/${fileId}/original.jpg`;
+      let largeUrl = `/photos/${fileId}/large.jpg`;
+      let pathname = `${fileId}/original.jpg`;
+
       if (asset.mediaType === "VIDEO") {
         const ext = asset.mimeType?.includes("quicktime") ? "mov" : "mp4";
         originalUrl = `/photos/${fileId}/original.${ext}`;
+        largeUrl = `/photos/${fileId}/thumb.jpg`;
+        pathname = `${fileId}/original.${ext}`;
       }
 
       return {
         id: asset.id,
-        pathname: `${fileId}/original.jpg`, // pathname is mostly for key reference
+        pathname,
         isHidden: asset.isHidden,
         size: 0,
         uploadedAt: asset.createdAt,
@@ -77,7 +82,7 @@ export default eventHandler(async (event) => {
         mediaType: asset.mediaType,
         urls: {
           original: originalUrl,
-          large: `/photos/${fileId}/large.jpg`,
+          large: largeUrl,
           thumbnail: `/photos/${fileId}/thumb.jpg`,
         },
         user: asset.user,

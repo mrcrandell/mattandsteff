@@ -388,14 +388,6 @@ async function submitForm() {
             body: fileItem.thumbnail,
             headers: { "Content-Type": "image/jpeg" },
           });
-          // Also push to large if it exists in presign response (reuse thumb)
-          if (presignData.urls.large) {
-            await fetch(presignData.urls.large, {
-              method: "PUT",
-              body: fileItem.thumbnail,
-              headers: { "Content-Type": "image/jpeg" },
-            });
-          }
         }
 
         fileItem.progress = 100;
