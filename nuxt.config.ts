@@ -60,12 +60,17 @@ export default defineNuxtConfig({
       assetUrl: process.env.NUXT_ASSET_URL || "https://assets.mattandsteff.com",
     },
     session: {
-      password: "",
+      password: process.env.NUXT_SESSION_PASSWORD || "",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
       cookie: {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        domain: process.env.NODE_ENV === "production"
+          ? (process.env.NUXT_SESSION_COOKIE_DOMAIN || ".mattandsteff.com")
+          : undefined,
       },
-      maxAge: 60 * 60 * 24 * 7 * 3, // 3 weeks
     },
     turnstile: {
       // This can be overridden at runtime via the NUXT_TURNSTILE_SECRET_KEY
