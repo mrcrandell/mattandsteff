@@ -65,22 +65,40 @@ export default defineNuxtConfig({
     manifest: {
       name: "Matt & Steff",
       short_name: "Matt & Steff",
+      id: "/",
+      scope: "/",
       theme_color: "#ffffff",
       background_color: "#ffffff",
       display: "standalone",
       start_url: "/",
+      orientation: "portrait",
       icons: [
         {
           src: "/web-app-manifest-192x192.png",
           sizes: "192x192",
           type: "image/png",
-          purpose: "maskable",
+          purpose: "any maskable",
         },
         {
           src: "/web-app-manifest-512x512.png",
           sizes: "512x512",
           type: "image/png",
-          purpose: "maskable",
+          purpose: "any maskable",
+        },
+      ],
+      screenshots: [
+        {
+          src: "/pwa-screenshot-wide.svg",
+          sizes: "1280x720",
+          type: "image/svg+xml",
+          form_factor: "wide",
+          label: "Desktop gallery view",
+        },
+        {
+          src: "/pwa-screenshot-mobile.svg",
+          sizes: "720x1280",
+          type: "image/svg+xml",
+          label: "Mobile gallery view",
         },
       ],
     },
