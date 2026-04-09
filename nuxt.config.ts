@@ -1,8 +1,11 @@
+const enablePwa = process.env.NUXT_PUBLIC_ENABLE_PWA === "true";
+
 export default defineNuxtConfig({
   modules: [
     "@nuxt/eslint",
     "@nuxtjs/google-fonts",
     "@nuxtjs/turnstile",
+    "@vite-pwa/nuxt",
     "nuxt-auth-utils",
   ],
   googleFonts: {
@@ -42,9 +45,121 @@ export default defineNuxtConfig({
         { rel: "manifest", href: "/site.webmanifest" },
       ],
       meta: [
+        {
+          name: "viewport",
+          content: "width=device-width,initial-scale=1,viewport-fit=cover",
+        },
+        { name: "theme-color", content: "#ffffff" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "default",
+        },
         { name: "apple-mobile-web-app-title", content: "Matt & Steff" },
         { name: "robots", content: "noindex, nofollow" },
       ],
+    },
+  },
+  pwa: {
+    registerType: "autoUpdate",
+    manifest: {
+      name: "Matt & Steff",
+      short_name: "Matt & Steff",
+      theme_color: "#ffffff",
+      background_color: "#ffffff",
+      display: "standalone",
+      start_url: "/",
+      icons: [
+        {
+          src: "/web-app-manifest-192x192.png",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "maskable",
+        },
+        {
+          src: "/web-app-manifest-512x512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        },
+      ],
+    },
+    workbox: {
+      globPatterns: ["**/*.{js,css,png,svg,ico,webmanifest}"],
+      cleanupOutdatedCaches: true,
+      skipWaiting: true,
+      clientsClaim: true,
+      navigateFallback: "/",
+      navigateFallbackDenylist: [/^\/admin(?:\/|$)/, /^\/admin-login(?:\/|$)/],
+      runtimeCaching: [
+        {
+          urlPattern: /^\/api\/(admin|upload)(?:\/|$)/,
+          handler: "NetworkOnly",
+          method: "GET",
+        },
+        {
+          urlPattern: /^\/api\/passcode\/verify(?:\/|$)/,
+          handler: "NetworkOnly",
+          method: "POST",
+        },
+        {
+          urlPattern: /^\/api\/(admin|upload)(?:\/|$)/,
+          handler: "NetworkOnly",
+          method: "POST",
+        },
+        {
+          urlPattern: /^\/api\/photos(?:\?.*)?$/,
+          handler: "StaleWhileRevalidate",
+          method: "GET",
+          options: {
+            cacheName: "gallery-api-cache",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 5,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+        {
+          urlPattern: /^https:\/\/assets\.mattandsteff\.com\/.*/,
+          handler: "StaleWhileRevalidate",
+          method: "GET",
+          options: {
+            cacheName: "gallery-assets-cache",
+            expiration: {
+              maxEntries: 300,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+        {
+          urlPattern: /^\/photos\/.*/,
+          handler: "StaleWhileRevalidate",
+          method: "GET",
+          options: {
+            cacheName: "gallery-photos-cache",
+            expiration: {
+              maxEntries: 300,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+      ],
+    },
+    client: {
+      registerPlugin: enablePwa,
+      installPrompt: true,
+    },
+    devOptions: {
+      enabled: false,
     },
   },
   compatibilityDate: "2024-11-01",
@@ -55,6 +170,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     passcode: "",
     public: {
+      enablePwa,
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL ||
         "https://www.mattandsteff.com",
       assetUrl: process.env.NUXT_ASSET_URL || "https://assets.mattandsteff.com",
@@ -99,7 +215,6 @@ export default defineNuxtConfig({
     css: {
       preprocessorOptions: {
         scss: {
-          api: "modern-compiler", // or "modern"
           silenceDeprecations: ["import"],
           additionalData: `
             @use "sass:math" as *;

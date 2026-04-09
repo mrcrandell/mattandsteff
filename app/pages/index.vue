@@ -1,32 +1,46 @@
-<script setup>
-const imgs = ref([]);
-const hasMore = ref(true);
-const cursor = ref();
-const bottomOfPageRef = ref(null);
+<script setup lang="ts">
+import type { Photo } from "~~/shared/types/photo";
+
+type PhotosResponse = {
+  imgs: Photo[];
+  hasMore: boolean;
+  cursor?: string;
+};
+
+const REFRESH_THROTTLE_MS = 30000;
+const OFFLINE_NOTICE = "You're offline. Showing saved gallery.";
+
+const imgs = useState<Photo[]>("gallery-imgs", () => []);
+const hasMore = useState<boolean>("gallery-has-more", () => true);
+const cursor = useState<string | undefined>("gallery-cursor", () => undefined);
+const lastSyncedAt = useState<number>("gallery-last-synced-at", () => 0);
+const bottomOfPageRef = ref<HTMLElement | null>(null);
 const route = useRoute();
 const router = useRouter();
 const { user, fetch: refreshSession } = useUserSession();
+const {
+  toasts,
+  removeToast,
+  success: showSuccess,
+  warning: showWarning,
+  info: showInfo,
+} = useToast();
 const isModalOpen = ref(false);
 const isGalleryOpen = ref(false);
 const activeGalleryIndex = ref(0);
-const showToast = ref(false);
-const toastMessage = ref("");
-const isLoading = ref(true);
+const isLoading = ref(imgs.value.length === 0);
+const isRefreshing = ref(false);
+const isFetchingPage = ref(false);
 
 async function handleUploadSuccess() {
   isLoading.value = true;
-  // Reset pagination to fetch new photos from the start
-  imgs.value = [];
-  cursor.value = undefined;
-  hasMore.value = true;
-  getPhotos();
+  await refreshFromStart();
   await new Promise((resolve) => setTimeout(resolve, 500));
   isModalOpen.value = false;
-  toastMessage.value = "Upload successful!";
-  showToast.value = true;
+  showSuccess("Upload successful!");
 }
 
-function openGallery(index) {
+function openGallery(index: number) {
   console.log(index);
   activeGalleryIndex.value = index;
   isGalleryOpen.value = true;
@@ -47,30 +61,133 @@ if (route.query.code) {
 }
 
 async function getPhotos() {
-  if (!hasMore.value) return;
-  const res = await $fetch("/api/photos", {
+  if (!hasMore.value || isFetchingPage.value) return;
+
+  isFetchingPage.value = true;
+
+  try {
+    const res = await $fetch<PhotosResponse>("/api/photos", {
+      query: {
+        limit: 10,
+        cursor: cursor.value,
+      },
+    });
+
+    imgs.value.push(...res.imgs);
+    hasMore.value = res.hasMore;
+    cursor.value = res.cursor;
+    lastSyncedAt.value = Date.now();
+  } catch {
+    if (!navigator.onLine) {
+      showWarning(OFFLINE_NOTICE);
+    }
+  } finally {
+    isLoading.value = false;
+    isFetchingPage.value = false;
+  }
+}
+
+async function refreshFromStart() {
+  if (!navigator.onLine) {
+    isLoading.value = false;
+    showWarning(OFFLINE_NOTICE);
+    return;
+  }
+
+  const res = await $fetch<PhotosResponse>("/api/photos", {
     query: {
       limit: 10,
-      cursor: cursor.value,
     },
   });
-  console.log(toRaw(res));
-  imgs.value.push(...res.imgs);
+
+  imgs.value = [...res.imgs];
   hasMore.value = res.hasMore;
   cursor.value = res.cursor;
+  lastSyncedAt.value = Date.now();
   isLoading.value = false;
 }
 
-function handleIntersection(entries) {
+async function checkForUpdates(force = false) {
+  if (isRefreshing.value || isFetchingPage.value) return;
+
+  const staleEnough = Date.now() - lastSyncedAt.value > REFRESH_THROTTLE_MS;
+  if (!force && !staleEnough) return;
+
+  if (!navigator.onLine) {
+    if (imgs.value.length > 0) {
+      showWarning(OFFLINE_NOTICE);
+    }
+    return;
+  }
+
+  isRefreshing.value = true;
+
+  try {
+    const res = await $fetch<PhotosResponse>("/api/photos", {
+      query: {
+        limit: 10,
+      },
+    });
+
+    if (imgs.value.length === 0) {
+      imgs.value = [...res.imgs];
+      hasMore.value = res.hasMore;
+      cursor.value = res.cursor;
+      lastSyncedAt.value = Date.now();
+      return;
+    }
+
+    const knownIds = new Set(imgs.value.map((img) => img.id));
+    const unseen = res.imgs.filter((img) => !knownIds.has(img.id));
+    if (unseen.length > 0) {
+      imgs.value = [...unseen, ...imgs.value];
+      showInfo(
+        `Gallery updated with ${unseen.length} new item${unseen.length > 1 ? "s" : ""}.`,
+      );
+    }
+
+    lastSyncedAt.value = Date.now();
+  } catch {
+    if (!navigator.onLine) {
+      showWarning("Couldn't check for updates while offline.");
+    }
+  } finally {
+    isRefreshing.value = false;
+  }
+}
+
+function handleOffline() {
+  showWarning(OFFLINE_NOTICE);
+}
+
+function handleOnline() {
+  showInfo("Back online. Refreshing gallery...");
+  checkForUpdates(true);
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === "visible") {
+    checkForUpdates();
+  }
+}
+
+function handleIntersection(entries: IntersectionObserverEntry[]) {
   const entry = entries[0];
-  if (entry.isIntersecting) {
+  if (entry?.isIntersecting) {
     getPhotos();
   }
 }
 
-let observer;
+let observer: IntersectionObserver | null = null;
 
-onMounted(() => {
+onMounted(async () => {
+  if (imgs.value.length === 0) {
+    await refreshFromStart();
+  } else {
+    isLoading.value = false;
+    checkForUpdates();
+  }
+
   observer = new IntersectionObserver(handleIntersection, {
     root: null,
     rootMargin: "0px",
@@ -79,11 +196,19 @@ onMounted(() => {
   if (bottomOfPageRef.value) {
     observer.observe(bottomOfPageRef.value);
   }
+
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", handleOffline);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 onUnmounted(() => {
   if (observer && bottomOfPageRef.value) {
     observer.unobserve(bottomOfPageRef.value);
   }
+
+  window.removeEventListener("online", handleOnline);
+  window.removeEventListener("offline", handleOffline);
+  document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 </script>
 
@@ -134,11 +259,16 @@ onUnmounted(() => {
       />
     </BaseModal>
 
-    <BaseToast
-      v-if="showToast"
-      :message="toastMessage"
-      @close="showToast = false"
-    />
+    <div class="toast-container">
+      <BaseToast
+        v-for="toast in toasts"
+        :key="toast.id"
+        :type="toast.type"
+        :message="toast.message"
+        :duration="toast.duration"
+        @close="removeToast(toast.id)"
+      />
+    </div>
   </main>
 </template>
 
@@ -219,5 +349,20 @@ main.main {
 .icon-loading {
   height: rem(100);
   width: rem(100);
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 }
 </style>

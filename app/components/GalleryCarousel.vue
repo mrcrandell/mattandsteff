@@ -34,6 +34,7 @@ const activeIndex = ref(props.startIndex);
 const videoRefs = ref<(HTMLVideoElement | null)[]>([]);
 const videoPreviewReady = ref<boolean[]>([]);
 const imageLoaded = ref<boolean[]>([]);
+const imageThumbLoaded = ref<boolean[]>([]);
 const videoThumbLoaded = ref<boolean[]>([]);
 
 const config = useRuntimeConfig();
@@ -88,6 +89,14 @@ function setImageLoaded(index: number, isLoaded: boolean) {
 
 function isImageLoaded(index: number) {
   return Boolean(imageLoaded.value[index]);
+}
+
+function setImageThumbLoaded(index: number, isLoaded: boolean) {
+  imageThumbLoaded.value[index] = isLoaded;
+}
+
+function isImageThumbLoaded(index: number) {
+  return Boolean(imageThumbLoaded.value[index]);
 }
 
 function setVideoThumbLoaded(index: number, isLoaded: boolean) {
@@ -150,6 +159,7 @@ watch(
   () => props.imgs,
   (imgs) => {
     imageLoaded.value = imgs.map(() => false);
+    imageThumbLoaded.value = imgs.map(() => false);
     videoThumbLoaded.value = imgs.map(() => false);
     videoPreviewReady.value = imgs.map(() => false);
   },
@@ -273,11 +283,34 @@ onUnmounted(() => {
           <Transition name="fade-media" appear>
             <img
               v-if="img.mediaType !== 'VIDEO'"
+              v-show="!isImageLoaded(index)"
+              :src="`${config.public.assetUrl}${img.urls.thumbnail}`"
+              :alt="img.post?.text || 'Gallery image preview'"
+              class="slide-image image-placeholder"
+              :class="{ 'is-visible': isImageThumbLoaded(index) }"
+              loading="lazy"
+              @load="setImageThumbLoaded(index, true)"
+            />
+          </Transition>
+          <Transition name="fade-media" appear>
+            <div
+              v-if="img.mediaType !== 'VIDEO'"
+              v-show="!isImageLoaded(index)"
+              class="image-loading-overlay"
+              aria-hidden="true"
+            >
+              <IconCircleLoading class="icon-loading" />
+            </div>
+          </Transition>
+          <Transition name="fade-media" appear>
+            <img
+              v-if="img.mediaType !== 'VIDEO'"
               :src="`${config.public.assetUrl}${img.urls.large}`"
               :alt="img.post?.text || 'Gallery image'"
               class="slide-image"
               :class="{ 'is-visible': isImageLoaded(index) }"
-              loading="lazy"
+              :loading="activeIndex === index ? 'eager' : 'lazy'"
+              :fetchpriority="activeIndex === index ? 'high' : 'auto'"
               @load="setImageLoaded(index, true)"
             />
           </Transition>
@@ -405,7 +438,23 @@ onUnmounted(() => {
   filter: blur(rem(2));
 }
 
+.image-placeholder {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  filter: blur(rem(8));
+}
+
 .video-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.image-loading-overlay {
   position: absolute;
   inset: 0;
   display: flex;
