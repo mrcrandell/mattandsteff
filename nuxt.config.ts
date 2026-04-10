@@ -50,6 +50,7 @@ export default defineNuxtConfig({
           content: "width=device-width,initial-scale=1,viewport-fit=cover",
         },
         { name: "theme-color", content: "#ffffff" },
+        { name: "mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         {
           name: "apple-mobile-web-app-status-bar-style",
@@ -174,7 +175,7 @@ export default defineNuxtConfig({
     },
     client: {
       registerPlugin: enablePwa,
-      installPrompt: true,
+      installPrompt: false,
     },
     devOptions: {
       enabled: false,
