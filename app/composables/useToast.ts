@@ -15,6 +15,14 @@ export const useToast = () => {
     type: Toast["type"] = "success",
     duration: number = 3000,
   ) => {
+    // Keep notifications calm by suppressing duplicates that are already visible.
+    const hasDuplicateVisibleToast = toasts.value.some((toast) =>
+      toast.type === type && toast.message === message
+    );
+    if (hasDuplicateVisibleToast) {
+      return;
+    }
+
     const id = Math.random().toString(36).substring(7);
     toasts.value.push({ id, type, message, duration });
   };

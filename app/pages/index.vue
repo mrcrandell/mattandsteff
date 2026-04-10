@@ -9,6 +9,7 @@ type PhotosResponse = {
 
 const REFRESH_THROTTLE_MS = 30000;
 const OFFLINE_NOTICE = "You're offline. Showing saved gallery.";
+const ONLINE_NOTICE = "Back online. Refreshing gallery...";
 
 const imgs = useState<Photo[]>("gallery-imgs", () => []);
 const hasMore = useState<boolean>("gallery-has-more", () => true);
@@ -31,6 +32,8 @@ const activeGalleryIndex = ref(0);
 const isLoading = ref(imgs.value.length === 0);
 const isRefreshing = ref(false);
 const isFetchingPage = ref(false);
+const offlineNoticeShown = ref(false);
+const onlineNoticeShown = ref(false);
 
 async function handleUploadSuccess() {
   isLoading.value = true;
@@ -41,9 +44,28 @@ async function handleUploadSuccess() {
 }
 
 function openGallery(index: number) {
-  console.log(index);
   activeGalleryIndex.value = index;
   isGalleryOpen.value = true;
+}
+
+function showOfflineNotice() {
+  if (offlineNoticeShown.value) {
+    return;
+  }
+
+  showWarning(OFFLINE_NOTICE);
+  offlineNoticeShown.value = true;
+  onlineNoticeShown.value = false;
+}
+
+function showOnlineNotice() {
+  if (onlineNoticeShown.value) {
+    return;
+  }
+
+  showInfo(ONLINE_NOTICE);
+  onlineNoticeShown.value = true;
+  offlineNoticeShown.value = false;
 }
 
 if (route.query.code) {
@@ -79,7 +101,7 @@ async function getPhotos() {
     lastSyncedAt.value = Date.now();
   } catch {
     if (!navigator.onLine) {
-      showWarning(OFFLINE_NOTICE);
+      showOfflineNotice();
     }
   } finally {
     isLoading.value = false;
@@ -90,7 +112,7 @@ async function getPhotos() {
 async function refreshFromStart() {
   if (!navigator.onLine) {
     isLoading.value = false;
-    showWarning(OFFLINE_NOTICE);
+    showOfflineNotice();
     return;
   }
 
@@ -115,7 +137,7 @@ async function checkForUpdates(force = false) {
 
   if (!navigator.onLine) {
     if (imgs.value.length > 0) {
-      showWarning(OFFLINE_NOTICE);
+      showOfflineNotice();
     }
     return;
   }
@@ -149,7 +171,7 @@ async function checkForUpdates(force = false) {
     lastSyncedAt.value = Date.now();
   } catch {
     if (!navigator.onLine) {
-      showWarning("Couldn't check for updates while offline.");
+      showOfflineNotice();
     }
   } finally {
     isRefreshing.value = false;
@@ -157,11 +179,11 @@ async function checkForUpdates(force = false) {
 }
 
 function handleOffline() {
-  showWarning(OFFLINE_NOTICE);
+  showOfflineNotice();
 }
 
 function handleOnline() {
-  showInfo("Back online. Refreshing gallery...");
+  showOnlineNotice();
   checkForUpdates(true);
 }
 
