@@ -46,6 +46,7 @@ async function handleReset() {
   try {
     await $fetch("/api/admin/reset", {
       method: "POST",
+      credentials: "include",
       body: {
         password: resetPassword.value,
       },

@@ -5,9 +5,9 @@ import {
 } from "@aws-sdk/client-s3";
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event);
+  const session = await getUserSession(event);
   if (!session?.admin) {
-    throw createError({ statusCode: 403, statusMessage: "Forbidden" });
+    throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 
   const { password } = await readValidatedBody(
