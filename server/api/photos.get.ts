@@ -5,7 +5,9 @@ export default eventHandler(async (event) => {
   const isAdmin = !!session.admin;
 
   const query = getQuery(event);
-  const page = parseInt(query.page as string || "1");
+  const page = parseInt(
+    (query.cursor as string) || (query.page as string) || "1",
+  );
   const limit = parseInt(query.limit as string || "100");
   const skip = (page - 1) * limit;
 
@@ -89,6 +91,7 @@ export default eventHandler(async (event) => {
         post: asset.assetsPosts[0]?.post || null,
       } as Photo;
     }),
+    total,
     hasMore: page * limit < total,
     cursor: page * limit < total ? (page + 1).toString() : null,
   };
