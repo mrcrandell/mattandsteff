@@ -501,6 +501,7 @@ main.main {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: rem(1);
+  background-color: $white;
 
   .base-thumbnail {
     width: 100%;

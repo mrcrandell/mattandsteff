@@ -51,6 +51,8 @@ onUnmounted(() => {
   width: 100%;
   padding-top: rem(5);
   margin-bottom: rem(5);
+  z-index: 100;
+
   &::after {
     position: absolute;
     content: "";
