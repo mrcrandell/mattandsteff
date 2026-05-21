@@ -108,7 +108,9 @@ function addFiles(newFiles: File[]) {
 function removeFile(index: number) {
   const file = files.value[index];
   if (file) {
-    URL.revokeObjectURL(file.preview);
+    if (file.preview.startsWith("blob:")) {
+      URL.revokeObjectURL(file.preview);
+    }
     files.value.splice(index, 1);
   }
 }
@@ -506,7 +508,23 @@ async function submitForm() {
 }
 
 onUnmounted(() => {
-  files.value.forEach((f) => URL.revokeObjectURL(f.preview));
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  if (mediaRecorder.value && mediaRecorder.value.state !== "inactive") {
+    mediaRecorder.value.onstop = null;
+    mediaRecorder.value.stop();
+  }
+
+  stopStream();
+
+  files.value.forEach((f) => {
+    if (f.preview.startsWith("blob:")) {
+      URL.revokeObjectURL(f.preview);
+    }
+  });
 });
 
 function onDrop(event: DragEvent) {
@@ -582,16 +600,16 @@ function triggerFileInput() {
         <div class="button-group">
           <button
             class="btn btn-outline-primary"
-            @click="triggerFileInput"
             :disabled="isUploading"
+            @click="triggerFileInput"
           >
             Add more
           </button>
           <button
             class="btn btn-outline-primary"
-            @click="startRecording"
             :class="{ 'btn-loading': isRecordingLoading }"
             :disabled="isUploading || isRecordingLoading"
+            @click="startRecording"
           >
             Record
 
@@ -662,15 +680,15 @@ function triggerFileInput() {
           placeholder="Add a message (optional)"
           rows="3"
           :disabled="isUploading"
-        ></textarea>
+        />
       </div>
 
       <BtnProgress
         :progress="overallProgress"
         :loading="isUploading"
         :disabled="files.length === 0"
-        @click="submitForm"
         class="btn-submit"
+        @click="submitForm"
       >
         <span v-if="isUploading">{{ uploadProgress }}</span>
         <span v-else>
@@ -685,7 +703,7 @@ function triggerFileInput() {
     </div>
 
     <!-- Recording Modal -->
-    <BaseModal :isShown="isRecording" @closed="cancelRecording" size="md">
+    <BaseModal :is-shown="isRecording" size="md" @closed="cancelRecording">
       <div class="recording-overlay">
         <div class="video-container">
           <video
@@ -694,7 +712,7 @@ function triggerFileInput() {
             playsinline
             muted
             class="recording-preview"
-          ></video>
+          />
           <div class="recording-timer">{{ recordingTime }}s</div>
         </div>
         <div class="recording-controls">

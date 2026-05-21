@@ -31,28 +31,60 @@ const emit = defineEmits<{
 const swiperContainer = ref<HTMLElement | null>(null);
 const swiperInstance = ref<Swiper | null>(null);
 const activeIndex = ref(props.startIndex);
-const videoRefs = ref<(HTMLVideoElement | null)[]>([]);
+const videoRefsById = ref<Record<string, HTMLVideoElement | null>>({});
 const videoPreviewReady = ref<boolean[]>([]);
 const imageLoaded = ref<boolean[]>([]);
 const imageThumbLoaded = ref<boolean[]>([]);
 const videoThumbLoaded = ref<boolean[]>([]);
+const isSwiperReady = ref(false);
+let closeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let didUnmount = false;
 
 const config = useRuntimeConfig();
 const isGalleryHidden = ref(false);
 
+function closeAfterError(error: unknown, context: string) {
+  console.error(`GalleryCarousel error in ${context}`, error);
+  if (!didUnmount) {
+    closeGallery();
+  }
+}
+
+function clampIndex(index: number) {
+  if (props.imgs.length === 0) {
+    return 0;
+  }
+
+  return Math.min(Math.max(index, 0), props.imgs.length - 1);
+}
+
+function getPhotoAt(index: number) {
+  return props.imgs[index];
+}
+
+function getVideoRefByIndex(index: number) {
+  const photoId = getPhotoAt(index)?.id;
+  if (!photoId) {
+    return null;
+  }
+
+  return videoRefsById.value[photoId] ?? null;
+}
+
 function setVideoRef(
-  index: number,
+  photoId: string,
   element: Element | ComponentPublicInstance | null,
 ) {
-  videoRefs.value[index] = element as HTMLVideoElement | null;
+  videoRefsById.value[photoId] = element as HTMLVideoElement | null;
 }
 
 function loadActiveVideo(index: number) {
-  if (props.imgs[index]?.mediaType !== "VIDEO") {
+  const nextIndex = clampIndex(index);
+  if (getPhotoAt(nextIndex)?.mediaType !== "VIDEO") {
     return;
   }
 
-  const video = videoRefs.value[index];
+  const video = getVideoRefByIndex(nextIndex);
 
   if (!video) {
     return;
@@ -107,18 +139,37 @@ function isVideoThumbLoaded(index: number) {
   return Boolean(videoThumbLoaded.value[index]);
 }
 
+function shouldRenderVideo(index: number) {
+  return index === activeIndex.value;
+}
+
+function getVideoSource(img: Photo, index: number) {
+  if (!shouldRenderVideo(index)) {
+    return undefined;
+  }
+
+  return `${config.public.assetUrl}${img.urls.original}`;
+}
+
+function getLargeImageSource(img: Photo, index: number) {
+  const useLarge = index === activeIndex.value;
+  const path = useLarge ? img.urls.large : img.urls.thumbnail;
+  return `${config.public.assetUrl}${path}`;
+}
+
 function cueVideoPreview(index: number) {
-  if (props.imgs[index]?.mediaType !== "VIDEO") {
+  const nextIndex = clampIndex(index);
+  if (getPhotoAt(nextIndex)?.mediaType !== "VIDEO") {
     return;
   }
 
-  const video = videoRefs.value[index];
+  const video = getVideoRefByIndex(nextIndex);
 
   if (!video) {
     return;
   }
 
-  setVideoPreviewReady(index, false);
+  setVideoPreviewReady(nextIndex, false);
 
   const setPreviewFrame = () => {
     video.pause();
@@ -140,90 +191,165 @@ function cueVideoPreview(index: number) {
 }
 
 function syncActiveVideo(index: number) {
-  for (const [videoIndex, video] of videoRefs.value.entries()) {
-    if (!video) {
-      continue;
+  try {
+    for (const video of Object.values(videoRefsById.value)) {
+      video?.pause();
     }
 
-    if (videoIndex === index && props.imgs[videoIndex]?.mediaType === "VIDEO") {
-      loadActiveVideo(videoIndex);
-      cueVideoPreview(videoIndex);
-      continue;
+    const nextIndex = clampIndex(index);
+    if (getPhotoAt(nextIndex)?.mediaType === "VIDEO") {
+      loadActiveVideo(nextIndex);
+      cueVideoPreview(nextIndex);
     }
-
-    video.pause();
+  } catch (error) {
+    closeAfterError(error, "syncActiveVideo");
   }
 }
 
 watch(
   () => props.imgs,
   (imgs) => {
+    const validIds = new Set(imgs.map((img) => img.id));
+    const nextRefs: Record<string, HTMLVideoElement | null> = {};
+    for (const [photoId, videoRef] of Object.entries(videoRefsById.value)) {
+      if (validIds.has(photoId)) {
+        nextRefs[photoId] = videoRef;
+      }
+    }
+    videoRefsById.value = nextRefs;
+
     imageLoaded.value = imgs.map(() => false);
     imageThumbLoaded.value = imgs.map(() => false);
     videoThumbLoaded.value = imgs.map(() => false);
     videoPreviewReady.value = imgs.map(() => false);
+
+    if (imgs.length === 0) {
+      activeIndex.value = 0;
+      return;
+    }
+
+    const clampedIndex = clampIndex(activeIndex.value);
+    activeIndex.value = clampedIndex;
+
+    nextTick(() => {
+      if (didUnmount) {
+        return;
+      }
+
+      if (isSwiperReady.value && swiperInstance.value) {
+        swiperInstance.value.update();
+        if (swiperInstance.value.realIndex !== clampedIndex) {
+          swiperInstance.value.slideTo(clampedIndex, 0);
+        }
+      }
+
+      syncActiveVideo(clampedIndex);
+    });
   },
   { immediate: true },
 );
 
 function closeGallery() {
   isGalleryHidden.value = true;
-  setTimeout(() => {
+  if (closeTimeoutId) {
+    clearTimeout(closeTimeoutId);
+  }
+
+  closeTimeoutId = setTimeout(() => {
+    if (didUnmount) {
+      return;
+    }
+
     emit("close");
   }, 300); // Delay to allow any closing animations to complete
 }
 
 onMounted(() => {
-  // Swiper initialization
-  setTimeout(() => {
-    if (swiperContainer.value) {
-      swiperInstance.value = new SwiperClass(swiperContainer.value, {
-        modules: [Navigation, Keyboard],
-        initialSlide: props.startIndex,
-        slidesPerView: 1,
-        spaceBetween: 20,
-        loop: true,
-        keyboard: {
-          enabled: true,
-        },
-        navigation: {
-          nextEl: ".swiper-button-next",
-          prevEl: ".swiper-button-prev",
-        },
-        on: {
-          slideChange: (swiper) => {
-            activeIndex.value = swiper.realIndex;
-            emit("slide-change", swiper.realIndex);
-            syncActiveVideo(swiper.realIndex);
-          },
-        },
-      });
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      if (didUnmount || !swiperContainer.value || swiperInstance.value) {
+        return;
+      }
 
-      nextTick(() => {
-        syncActiveVideo(activeIndex.value);
-      });
-    }
-  }, 50);
+      try {
+        const startIndex = clampIndex(props.startIndex);
+        activeIndex.value = startIndex;
+        swiperInstance.value = new SwiperClass(swiperContainer.value, {
+          modules: [Navigation, Keyboard],
+          initialSlide: startIndex,
+          slidesPerView: 1,
+          spaceBetween: 20,
+          loop: false,
+          keyboard: {
+            enabled: true,
+          },
+          navigation: {
+            nextEl: ".swiper-button-next",
+            prevEl: ".swiper-button-prev",
+          },
+          on: {
+            slideChange: (swiper) => {
+              try {
+                activeIndex.value = swiper.realIndex;
+                emit("slide-change", swiper.realIndex);
+                syncActiveVideo(swiper.realIndex);
+              } catch (error) {
+                closeAfterError(error, "slideChange");
+              }
+            },
+          },
+        });
+
+        isSwiperReady.value = true;
+        nextTick(() => {
+          if (!didUnmount) {
+            syncActiveVideo(activeIndex.value);
+          }
+        });
+      } catch (error) {
+        closeAfterError(error, "onMounted");
+      }
+    });
+  });
 });
 
 // Watch for startIndex changes
 watch(
   () => props.startIndex,
   (newIndex) => {
-    activeIndex.value = newIndex;
+    if (props.imgs.length === 0) {
+      activeIndex.value = 0;
+      return;
+    }
 
-    if (swiperInstance.value && newIndex !== swiperInstance.value.realIndex) {
-      swiperInstance.value.slideToLoop(newIndex, 0);
+    const clampedIndex = clampIndex(newIndex);
+    activeIndex.value = clampedIndex;
+
+    if (
+      isSwiperReady.value &&
+      swiperInstance.value &&
+      clampedIndex !== swiperInstance.value.realIndex
+    ) {
+      swiperInstance.value.slideTo(clampedIndex, 0);
     }
 
     nextTick(() => {
-      syncActiveVideo(newIndex);
+      if (!didUnmount) {
+        syncActiveVideo(clampedIndex);
+      }
     });
   },
 );
 
 onUnmounted(() => {
-  for (const video of videoRefs.value) {
+  didUnmount = true;
+
+  if (closeTimeoutId) {
+    clearTimeout(closeTimeoutId);
+    closeTimeoutId = null;
+  }
+
+  for (const video of Object.values(videoRefsById.value)) {
     video?.pause();
   }
 
@@ -231,25 +357,31 @@ onUnmounted(() => {
     swiperInstance.value.destroy();
     swiperInstance.value = null;
   }
+
+  isSwiperReady.value = false;
 });
 </script>
 
 <template>
   <div
-    class="swiper-container"
     ref="swiperContainer"
+    class="swiper-container"
     :class="{ 'is-hidden': isGalleryHidden }"
   >
-    <button class="close-btn" @click="closeGallery" aria-label="Close gallery">
+    <button
+      class="close-btn"
+      aria-label="Close gallery"
+      @click.prevent="closeGallery"
+    >
       <IconClose />
     </button>
     <div class="swiper-wrapper">
-      <div class="swiper-slide" v-for="(img, index) in imgs" :key="img.id">
+      <div v-for="(img, index) in imgs" :key="img.id" class="swiper-slide">
         <div class="slide-content">
           <video
-            v-if="img.mediaType === 'VIDEO'"
-            :ref="(element) => setVideoRef(index, element)"
-            :src="`${config.public.assetUrl}${img.urls.original}`"
+            v-if="img.mediaType === 'VIDEO' && shouldRenderVideo(index)"
+            :ref="(element) => setVideoRef(img.id, element)"
+            :src="getVideoSource(img, index)"
             :poster="`${config.public.assetUrl}${img.urls.thumbnail}`"
             controls
             playsinline
@@ -257,7 +389,7 @@ onUnmounted(() => {
             class="slide-video"
             :class="{ 'is-visible': isVideoPreviewReady(index) }"
             @canplaythrough="handleVideoCanPlayThrough(index)"
-          ></video>
+          />
           <Transition name="fade-media" appear>
             <img
               v-if="img.mediaType === 'VIDEO'"
@@ -305,7 +437,7 @@ onUnmounted(() => {
           <Transition name="fade-media" appear>
             <img
               v-if="img.mediaType !== 'VIDEO'"
-              :src="`${config.public.assetUrl}${img.urls.large}`"
+              :src="getLargeImageSource(img, index)"
               :alt="img.post?.text || 'Gallery image'"
               class="slide-image"
               :class="{ 'is-visible': isImageLoaded(index) }"
@@ -315,8 +447,8 @@ onUnmounted(() => {
             />
           </Transition>
           <div
-            class="info-overlay"
             v-if="img.post?.text || img.user?.name || img.post?.user?.name"
+            class="info-overlay"
           >
             <div class="info-content">
               <p v-if="img.post?.text" class="post-text">{{ img.post.text }}</p>
@@ -332,8 +464,8 @@ onUnmounted(() => {
       </div>
     </div>
     <!-- Swiper Navigation Buttons -->
-    <div class="swiper-button-prev"></div>
-    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev" />
+    <div class="swiper-button-next" />
   </div>
 </template>
 

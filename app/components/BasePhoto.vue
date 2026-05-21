@@ -6,21 +6,30 @@ const props = defineProps({
   },
   post: {
     type: String,
-  }
+  },
 });
-const emit = defineEmits('post-update');
+const emit = defineEmits("post-update");
 const isModalOpen = ref(false);
 const updatedPost = ref(post);
 
 function handleUpdate() {
-  emit('post-update', updatedPost.value);
+  emit("post-update", updatedPost.value);
 }
 </script>
 
 <template>
   <div class="photo-container">
-    <img :src="photo" alt="Photo" @click="isModalOpen = true" class="photo-preview" />
-    <BaseModal class="modal-photo" :isShown="isModalOpen" @closed="isModalOpen = false">
+    <img
+      :src="photo"
+      alt="Photo"
+      @click.prevent="isModalOpen = true"
+      class="photo-preview"
+    />
+    <BaseModal
+      class="modal-photo"
+      :isShown="isModalOpen"
+      @closed="isModalOpen = false"
+    >
       <button class="btn-close" @click="isModalOpen = false">
         <IconClose />
       </button>

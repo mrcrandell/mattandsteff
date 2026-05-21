@@ -7,9 +7,9 @@ export default createConfigForNuxt({
     // ...Prepend some flat configs in front
   )
   // Override some rules in a specific config, based on their name
-  .override('nuxt/typescript', {
+  .override('nuxt/typescript/rules', {
     rules: {
-      semi: ['always'],
+      semi: ['error', 'always'],
     },
     ignores: ['**/vendor/**'],
   });

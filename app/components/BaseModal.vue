@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, useSlots } from "vue";
+import { onUnmounted, ref, watch, useSlots } from "vue";
 
 const slots: any = useSlots();
 
@@ -23,6 +23,8 @@ const prop = defineProps({
 });
 const emit = defineEmits(["closed"]);
 const isShownComplete = ref(false);
+const previousBodyOverflow = ref<string | null>(null);
+let showTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 function close() {
   emit("closed");
@@ -35,24 +37,50 @@ watch(
   () => prop.isShown,
   () => {
     function disableScroll() {
+      if (previousBodyOverflow.value === null) {
+        previousBodyOverflow.value = document.body.style.overflow;
+      }
       document.body.style.overflow = "hidden";
     }
-    function enableScroll() {
-      document.body.style.overflow = "auto";
+
+    function restoreScroll() {
+      if (previousBodyOverflow.value !== null) {
+        document.body.style.overflow = previousBodyOverflow.value;
+        previousBodyOverflow.value = null;
+      }
     }
+
+    if (showTimeoutId) {
+      clearTimeout(showTimeoutId);
+      showTimeoutId = null;
+    }
+
     if (prop.isShown) {
       if (!prop.disableScrolling) {
         disableScroll();
       }
-      setTimeout(() => {
+
+      showTimeoutId = setTimeout(() => {
         isShownComplete.value = true;
       }, 100);
     } else {
-      enableScroll();
+      restoreScroll();
       isShownComplete.value = false;
     }
   },
 );
+
+onUnmounted(() => {
+  if (showTimeoutId) {
+    clearTimeout(showTimeoutId);
+    showTimeoutId = null;
+  }
+
+  if (previousBodyOverflow.value !== null) {
+    document.body.style.overflow = previousBodyOverflow.value;
+    previousBodyOverflow.value = null;
+  }
+});
 </script>
 
 <template>

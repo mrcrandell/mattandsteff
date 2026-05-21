@@ -26,14 +26,76 @@ const {
   warning: showWarning,
   info: showInfo,
 } = useToast();
+const runtimeConfig = useRuntimeConfig();
 const isModalOpen = ref(false);
 const isGalleryOpen = ref(false);
 const activeGalleryIndex = ref(0);
+const activeGalleryPhotoId = ref<string | null>(null);
+const isGalleryOpening = ref(false);
 const isLoading = ref(imgs.value.length === 0);
 const isRefreshing = ref(false);
 const isFetchingPage = ref(false);
 const offlineNoticeShown = ref(false);
 const onlineNoticeShown = ref(false);
+
+const isIOSSafari = computed(() => {
+  if (!import.meta.client) {
+    return false;
+  }
+
+  const ua = navigator.userAgent;
+  const isIOS = /iP(hone|ad|od)/.test(ua);
+  const isWebKit = /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  return isIOS && isWebKit;
+});
+
+const galleryWindowSize = computed(() => (isIOSSafari.value ? 8 : 24));
+const galleryWindowHalf = computed(() =>
+  Math.floor(galleryWindowSize.value / 2),
+);
+const maxInMemoryItems = computed(() => (isIOSSafari.value ? 80 : 200));
+
+const GALLERY_CRASH_CONTEXT_KEY = "gallery-crash-context";
+const CRASH_DEBUG_STORAGE_KEY = "crash-debug-enabled";
+const isCrashDebugActive = ref(false);
+
+function updateCrashDebugState() {
+  if (!import.meta.client) {
+    isCrashDebugActive.value = false;
+    return;
+  }
+
+  const runtimeEnabled = runtimeConfig.public.enableCrashDebug === true;
+  const localEnabled = localStorage.getItem(CRASH_DEBUG_STORAGE_KEY) === "1";
+  isCrashDebugActive.value = runtimeEnabled || localEnabled;
+}
+
+function persistGalleryCrashContext() {
+  if (!isCrashDebugActive.value) {
+    return;
+  }
+
+  const context = {
+    time: new Date().toISOString(),
+    route: route.fullPath,
+    imgsLength: imgs.value.length,
+    hasMore: hasMore.value,
+    cursor: cursor.value ?? null,
+    activeGalleryIndex: activeGalleryIndex.value,
+    activeGalleryPhotoId: activeGalleryPhotoId.value,
+    isGalleryOpen: isGalleryOpen.value,
+    isGalleryOpening: isGalleryOpening.value,
+    isLoading: isLoading.value,
+    isRefreshing: isRefreshing.value,
+    isFetchingPage: isFetchingPage.value,
+  };
+
+  try {
+    sessionStorage.setItem(GALLERY_CRASH_CONTEXT_KEY, JSON.stringify(context));
+  } catch (error) {
+    console.warn("Failed to persist gallery crash context", error);
+  }
+}
 
 async function handleUploadSuccess() {
   isLoading.value = true;
@@ -43,9 +105,70 @@ async function handleUploadSuccess() {
   showSuccess("Upload successful!");
 }
 
-function openGallery(index: number) {
-  activeGalleryIndex.value = index;
+function openGallery(photoId: string) {
+  if (isGalleryOpening.value) {
+    return;
+  }
+
+  isGalleryOpening.value = true;
+  const nextIndex = imgs.value.findIndex((img) => img.id === photoId);
+  activeGalleryIndex.value = nextIndex >= 0 ? nextIndex : 0;
+  activeGalleryPhotoId.value = photoId;
   isGalleryOpen.value = true;
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      isGalleryOpening.value = false;
+    });
+  });
+}
+
+function handleSlideChange(index: number) {
+  activeGalleryIndex.value = index;
+  const activePhoto = imgs.value[index];
+  activeGalleryPhotoId.value = activePhoto?.id ?? null;
+}
+
+const galleryWindowStart = computed(() => {
+  const total = imgs.value.length;
+  if (total <= galleryWindowSize.value) {
+    return 0;
+  }
+
+  const centeredStart = Math.max(
+    activeGalleryIndex.value - galleryWindowHalf.value,
+    0,
+  );
+  return Math.min(centeredStart, total - galleryWindowSize.value);
+});
+
+const galleryWindowImgs = computed(() => {
+  const start = galleryWindowStart.value;
+  return imgs.value.slice(start, start + galleryWindowSize.value);
+});
+
+const galleryWindowStartIndex = computed(() => {
+  return Math.max(activeGalleryIndex.value - galleryWindowStart.value, 0);
+});
+
+function handleWindowedSlideChange(windowIndex: number) {
+  const absoluteIndex = galleryWindowStart.value + windowIndex;
+  handleSlideChange(absoluteIndex);
+}
+
+function trimGalleryMemory() {
+  const maxItems = maxInMemoryItems.value;
+  if (imgs.value.length <= maxItems) {
+    return;
+  }
+
+  imgs.value = imgs.value.slice(0, maxItems);
+
+  if (activeGalleryIndex.value >= imgs.value.length) {
+    activeGalleryIndex.value = Math.max(imgs.value.length - 1, 0);
+    activeGalleryPhotoId.value =
+      imgs.value[activeGalleryIndex.value]?.id ?? null;
+  }
 }
 
 function showOfflineNotice() {
@@ -83,6 +206,7 @@ if (route.query.code) {
 }
 
 async function getPhotos() {
+  if (isGalleryOpen.value || isGalleryOpening.value) return;
   if (!hasMore.value || isFetchingPage.value) return;
 
   isFetchingPage.value = true;
@@ -96,6 +220,7 @@ async function getPhotos() {
     });
 
     imgs.value.push(...res.imgs);
+    trimGalleryMemory();
     hasMore.value = res.hasMore;
     cursor.value = res.cursor;
     lastSyncedAt.value = Date.now();
@@ -123,6 +248,7 @@ async function refreshFromStart() {
   });
 
   imgs.value = [...res.imgs];
+  trimGalleryMemory();
   hasMore.value = res.hasMore;
   cursor.value = res.cursor;
   lastSyncedAt.value = Date.now();
@@ -130,6 +256,7 @@ async function refreshFromStart() {
 }
 
 async function checkForUpdates(force = false) {
+  if (isGalleryOpen.value || isGalleryOpening.value) return;
   if (isRefreshing.value || isFetchingPage.value) return;
 
   const staleEnough = Date.now() - lastSyncedAt.value > REFRESH_THROTTLE_MS;
@@ -163,6 +290,7 @@ async function checkForUpdates(force = false) {
     const unseen = res.imgs.filter((img) => !knownIds.has(img.id));
     if (unseen.length > 0) {
       imgs.value = [...unseen, ...imgs.value];
+      trimGalleryMemory();
       showInfo(
         `Gallery updated with ${unseen.length} new item${unseen.length > 1 ? "s" : ""}.`,
       );
@@ -194,15 +322,77 @@ function handleVisibilityChange() {
 }
 
 function handleIntersection(entries: IntersectionObserverEntry[]) {
+  if (isGalleryOpen.value || isGalleryOpening.value) {
+    return;
+  }
+
   const entry = entries[0];
   if (entry?.isIntersecting) {
     getPhotos();
   }
 }
 
+watch(
+  imgs,
+  (nextImgs) => {
+    if (!isGalleryOpen.value || !activeGalleryPhotoId.value) {
+      return;
+    }
+
+    const nextIndex = nextImgs.findIndex(
+      (img) => img.id === activeGalleryPhotoId.value,
+    );
+    if (nextIndex >= 0) {
+      activeGalleryIndex.value = nextIndex;
+      return;
+    }
+
+    activeGalleryIndex.value = 0;
+    activeGalleryPhotoId.value = nextImgs[0]?.id ?? null;
+  },
+  { deep: false },
+);
+
+watch(isGalleryOpen, (open) => {
+  if (!observer) {
+    return;
+  }
+
+  if (open) {
+    observer.disconnect();
+    return;
+  }
+
+  if (bottomOfPageRef.value) {
+    observer.observe(bottomOfPageRef.value);
+  }
+});
+
+watch(
+  [
+    imgs,
+    hasMore,
+    cursor,
+    activeGalleryIndex,
+    activeGalleryPhotoId,
+    isGalleryOpen,
+    isGalleryOpening,
+    isLoading,
+    isRefreshing,
+    isFetchingPage,
+  ],
+  () => {
+    persistGalleryCrashContext();
+  },
+  { deep: false },
+);
+
 let observer: IntersectionObserver | null = null;
 
 onMounted(async () => {
+  updateCrashDebugState();
+  persistGalleryCrashContext();
+
   if (imgs.value.length === 0) {
     await refreshFromStart();
   } else {
@@ -224,8 +414,11 @@ onMounted(async () => {
   document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 onUnmounted(() => {
-  if (observer && bottomOfPageRef.value) {
-    observer.unobserve(bottomOfPageRef.value);
+  persistGalleryCrashContext();
+
+  if (observer) {
+    observer.disconnect();
+    observer = null;
   }
 
   window.removeEventListener("online", handleOnline);
@@ -236,16 +429,16 @@ onUnmounted(() => {
 
 <template>
   <main class="main" :class="{ 'is-loading': isLoading }">
-    <IconCircleLoading class="icon-loading" v-if="isLoading" />
+    <IconCircleLoading v-if="isLoading" class="icon-loading" />
     <div class="img-gallery">
       <BaseThumbnail
-        class="base-thumbnail"
-        v-for="(img, index) in imgs"
+        v-for="img in imgs"
         :key="img.id"
+        class="base-thumbnail"
         :img="img"
-        @click="openGallery(index)"
+        @click.stop.prevent="openGallery(img.id)"
       />
-      <div ref="bottomOfPageRef" class="bottom-of-page"></div>
+      <div ref="bottomOfPageRef" class="bottom-of-page" />
     </div>
     <!-- {{ user ? "Logged in" : "Not logged in" }} -->
     <div v-if="user" class="btn-container">
@@ -255,7 +448,7 @@ onUnmounted(() => {
     </div>
     <BaseModal
       class="modal-upload"
-      :isShown="isModalOpen"
+      :is-shown="isModalOpen"
       @closed="isModalOpen = false"
     >
       <template #header>
@@ -268,15 +461,15 @@ onUnmounted(() => {
 
     <!-- Gallery Modal -->
     <BaseModal
-      :isShown="isGalleryOpen"
+      :is-shown="isGalleryOpen"
       size="full"
       @closed="isGalleryOpen = false"
     >
       <GalleryCarousel
         v-if="isGalleryOpen"
-        :imgs="imgs"
-        :start-index="activeGalleryIndex"
-        @slide-change="(index) => (activeGalleryIndex = index)"
+        :imgs="galleryWindowImgs"
+        :start-index="galleryWindowStartIndex"
+        @slide-change="handleWindowedSlideChange"
         @close="isGalleryOpen = false"
       />
     </BaseModal>
